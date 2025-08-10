@@ -226,18 +226,20 @@ function App() {
         />
 
         <div className="main-content">
-          <div className="pdf-viewers" id="pdfViewers">
-            {pdfDocuments.length > 0 ? (
-              pdfDocuments.map(doc => (
-                <PdfViewer 
-                  key={doc.id} 
-                  pdfData={doc}
-                  onRemove={removePDF}
-                  onPageChange={updatePdfPage}
-                  onCapture={handleCapture}
-                />
-              ))
-            ) : (
+<div className="pdf-viewers" id="pdfViewers">
+  {pdfDocuments.length > 0 ? (
+    // Find this line
+    pdfDocuments.map((doc, index) => ( // <-- Add 'index' here
+	      <PdfViewer 
+		key={doc.id} 
+		pdfData={doc}
+		index={index} // <-- Pass the index as a prop
+		onRemove={removePDF}
+		onPageChange={updatePdfPage}
+		onCapture={handleCapture}
+	      />
+	    ))
+	) : (
               <div className="empty-state">
                 <h3>🌌 READY FOR DIGITAL EXPLORATION</h3>
                 <p>Load your PDFs to begin the cybernetic document journey</p>

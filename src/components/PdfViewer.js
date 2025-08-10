@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-function PdfViewer({ pdfData, onRemove, onPageChange, onCapture }) {
+function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   const canvasRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
@@ -84,7 +84,8 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture }) {
   };
 
   return (
-    <div className="pdf-viewer glow">
+    <div className="pdf-viewer glow"
+		style={{ animationDelay: `${index * 100}ms`}}>
       <div className="pdf-header">
         <div className="pdf-title">{pdfData.name}</div>
         <div className="pdf-controls">
