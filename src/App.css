@@ -40,6 +40,66 @@
             padding: 15px;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            transform: translateY(calc(-100% + 25px));
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+        }
+
+        /* Expanded state */
+        .header.expanded {
+            transform: translateY(0);
+            cursor: default;
+        }
+
+        /* Hover fallback */
+        .header:hover:not(.dragging) {
+            transform: translateY(0);
+            cursor: default;
+        }
+
+        /* Style the collapsed header content */
+        .header .logo {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #9333ea;
+            color: #e0e6ff;
+            margin-bottom: 10px;
+            /* Add positioning for collapsed state */
+            position: absolute;
+            left: 50%;
+            top: 2px;
+            transform: translateX(-50%);
+            transition: opacity 0.3s ease;
+            opacity: 1;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        /* Hide logo when expanded, show controls */
+        .header:hover .logo,
+        .header.expanded .logo {
+            opacity: 0;
+        }
+
+        .header .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .header:hover .controls,
+        .header.expanded .controls {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .logo {
@@ -94,12 +154,12 @@
         .cyber-button:hover::before {
             left: 100%;
         }
-
         .main-content {
             flex: 1;
             display: flex;
             overflow: hidden;
-	    position: relative;
+            position: relative;
+            margin-top: 25px; /* Space for collapsed header */
         }
 
         .pdf-viewers {
@@ -631,4 +691,14 @@
   background: rgba(147, 51, 234, 0.4) !important;
   border: 2px dashed #9333ea !important;
   border-radius: 4px;
+}
+
+/* Prevent header from collapsing during drag operations */
+.header.dragging {
+    transform: translateY(0) !important;
+}
+
+/* Ensure body handles dragging state for header too */
+body.dragging .header {
+    transform: translateY(0) !important;
 }
