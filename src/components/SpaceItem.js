@@ -17,10 +17,6 @@ function SpaceItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoomedCapture, setZoomedCapture] = useState(null);
 
-  const handleSortEnd = (newCaptures, pageId) => {
-    onUpdateCaptures(space.id, pageId, newCaptures);
-  };
-
   const handleCaptureAdd = (newCaptures, pageId, evt) => {
     if (evt.from !== evt.to) {
       const movedCapture = newCaptures.find(capture => 

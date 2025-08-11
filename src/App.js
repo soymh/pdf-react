@@ -42,16 +42,6 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
-  // Effect to save spaces to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('pdfWorkspaceSpaces', JSON.stringify(spaces));
-  }, [spaces]);
-  
-  // Welcome notification on first load
-  useEffect(() => {
-    showNotification('🌟 Welcome to PDF Workspace - Cyberpunk Edition! 🌟', 'success');
-  }, []);
-
   const showNotification = useCallback((message, type = 'info') => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
@@ -59,6 +49,20 @@ function App() {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
   }, []);
+
+  // Effect to save spaces to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('pdfWorkspaceSpaces', JSON.stringify(spaces));
+  }, [spaces]);
+  
+  // Welcome notification on first load
+  useEffect(() => {
+    const notificationId = setTimeout(() => {
+    showNotification('🌟 Welcome to PDF Workspace - Cyberpunk Edition! 🌟', 'success');
+    }, 1000); // Delay to ensure UI is ready
+
+    return () => clearTimeout(notificationId);
+  }, [showNotification]);
 
   const handleFileSelect = async (event) => {
     const files = Array.from(event.target.files);
@@ -163,12 +167,6 @@ function App() {
       }
       showNotification('Space deleted', 'success');
     }
-  };
-  
-  const updateSpaceCaptures = (spaceId, newCaptures) => {
-     setSpaces(prevSpaces => 
-        prevSpaces.map(s => s.id === spaceId ? {...s, captures: newCaptures} : s)
-     );
   };
   
   const exportSpaceAsPdf = async (spaceId) => {
@@ -397,3 +395,4 @@ function App() {
 }
 
 export default App;
+
