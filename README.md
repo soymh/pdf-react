@@ -1,70 +1,102 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# ⚡ PDF Workspace - Cyberpunk Edition ⚡
 
-## Available Scripts
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
+![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)
 
-In the project directory, you can run:
+A dynamic, cyberpunk-themed web application built with React for advanced PDF interaction. Go beyond simple viewing—capture regions, organize snippets into "Spaces," and compile them into new documents. This project was built to explore modern React features and demonstrate handling complex UI/UX with third-party libraries like PDF.js.
 
-### `npm start`
+## Key Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+-   **Multi-PDF Viewer**: Load and view multiple PDF documents side-by-side in a scrollable workspace.
+-   **Region Capture**: Select any rectangular area on a PDF page with your mouse to create an image snippet.
+-   **"Spaces" for Organization**: Create distinct workspaces (called "Spaces") to collect and group your captured snippets.
+-   **Drag-and-Drop Reordering**: Easily reorder your captured images within a Space using a smooth drag-and-drop interface.
+-   **PDF Export**: Compile all the captures within a Space into a brand new, single PDF document, preserving the order you set.
+-   **Persistent State**: Your created Spaces and captures are automatically saved to your browser's `localStorage`, so your work is preserved between sessions.
+-   **Responsive & Dynamic UI**: A sleek, cyberpunk-themed interface featuring a hover-to-expand sidebar and fluid animations.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+-   **[React](https://reactjs.org/)**: The core UI library for building the component-based architecture.
+-   **[PDF.js](https://mozilla.github.io/pdf.js/)**: (`pdfjs-dist`) A library from Mozilla for rendering PDF documents onto an HTML `<canvas>`.
+-   **[jsPDF](https://github.com/parallax/jsPDF)**: Used to generate the final, combined PDF from the captured image snippets.
+-   **[React SortableJS](https://github.com/SortableJS/react-sortablejs)**: A React wrapper for the powerful `Sortable.js` library to enable drag-and-drop functionality.
+-   **CSS3**: Custom styling for the unique cyberpunk theme, including animations, flexbox/grid layouts, and the hover-based UI.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Getting Started
 
-### `npm run build`
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Prerequisites
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+You need to have [Node.js](https://nodejs.org/) (version 14 or later) and `npm` installed on your computer.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Installation
 
-### `npm run eject`
+1.  **Clone the repository**
+    ```sh
+    git clone https://github.com/soymh/pdf-react.git
+    ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+2.  **Navigate to the project directory**
+    ```sh
+    cd pdf-react
+    ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+3.  **Install NPM packages**
+    ```sh
+    npm install
+    ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+4.  **Run the application**
+    ```sh
+    npm start
+    ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+The app will open automatically in your browser at `http://localhost:3000`.
 
-## Learn More
+## Project Structure
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The project is organized with a clear and scalable component-based structure.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+pdf-react/
+├── public/
+│   ├── index.html          # The root HTML file
+│   └── pdf.worker.min.js   # PDF.js worker file for performance
+│
+├── src/
+│   ├── components/         # All reusable React components
+│   │   ├── CreateSpaceModal.js
+│   │   ├── Header.js
+│   │   ├── Notification.js
+│   │   ├── PdfViewer.js
+│   │   └── SpacesPanel.js
+│   │
+│   ├── App.js              # The main application component, holds the primary state
+│   ├── App.css             # All styles for the application
+│   └── index.js            # The entry point for the React app
+│
+├── .gitignore
+├── package.json
+└── README.md
+```
 
-### Code Splitting
+## Future Ideas
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+This project has a solid foundation. Here are some ideas for future enhancements:
+-   [ ] Implement easy captured sections manipulation (e.g., Add Multiple captured pages freely in a PDF page).
+-   [ ] Add AI tools to make Markdown Notes out of your captured PDFs!
+-   [ ] Implement a cloud api trigger for converting notes to markdown using Vision AI models.
+-   [ ] Add more export options...
+-   [ ] Enhance accessibility (ARIA attributes, keyboard navigation).
 
-### Analyzing the Bundle Size
+## License
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+This project is distributed under the MIT License. See `LICENSE` for more information (you can create this file if you want, or just leave this note).
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+*This README was generated with care using AI! Feel free to contribute by opening an issue or a pull request!*
