@@ -1,9 +1,72 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SpaceItem from './SpaceItem';
 
-function SpacesPanel({ spaces, activeSpaceId, onCreateSpace, onSetActiveSpace, onDeleteSpace, onExportSpace, onUpdateCaptures }) {
+function SpacesPanel({ 
+  spaces, 
+  activeSpaceId, 
+  onCreateSpace, 
+  onSetActiveSpace, 
+  onDeleteSpace, 
+  onExportSpace, 
+  onUpdateCaptures,
+  onCaptureMove, // Add this prop
+  onAddNewPage,
+  onDeletePage 
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const panelRef = useRef(null);
+  const expandTimeoutRef = useRef(null);
+
+  // Handle panel expansion/collapse
+  const handleMouseEnter = () => {
+    if (!isDragging) {
+      clearTimeout(expandTimeoutRef.current);
+      setIsExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isDragging) {
+      expandTimeoutRef.current = setTimeout(() => {
+        setIsExpanded(false);
+      }, 300); // Small delay to prevent flickering
+    }
+  };
+
+  // Global drag event listeners
+  useEffect(() => {
+    const handleDragStart = (e) => {
+      // Check if the drag started from a capture thumbnail
+      if (e.target.classList.contains('capture-thumbnail')) {
+        setIsDragging(true);
+        setIsExpanded(true);
+      }
+    };
+
+    const handleDragEnd = () => {
+      setIsDragging(false);
+      // Don't auto-collapse after drag ends, let user decide
+    };
+
+    // Listen to global drag events
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+
+    return () => {
+      document.removeEventListener('dragstart', handleDragStart);
+      document.removeEventListener('dragend', handleDragEnd);
+      clearTimeout(expandTimeoutRef.current);
+    };
+  }, []);
+
   return (
-    <div className="spaces-panel">
+    <div 
+      ref={panelRef}
+      className={`spaces-panel ${isExpanded ? 'expanded' : ''} ${isDragging ? 'dragging' : ''}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="spaces-header">
         <span>🎯 SPACES</span>
         <button className="cyber-button" onClick={onCreateSpace} style={{ padding: '5px 10px', fontSize: '12px' }}>
@@ -21,6 +84,11 @@ function SpacesPanel({ spaces, activeSpaceId, onCreateSpace, onSetActiveSpace, o
               onDelete={onDeleteSpace}
               onExport={onExportSpace}
               onUpdateCaptures={onUpdateCaptures}
+              onCaptureMove={onCaptureMove} // Add this prop
+              onAddNewPage={onAddNewPage}
+              onDeletePage={onDeletePage}
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
             />
           ))
         ) : (

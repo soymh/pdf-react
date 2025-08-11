@@ -13,12 +13,30 @@ import './App.css';
 // GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${require('pdfjs-dist/package.json').version}/pdf.worker.min.js`;
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
+const migrateOldSpacesToNewFormat = (spaces) => {
+  return spaces.map(space => {
+    // If space has old 'captures' format, migrate it
+    if (space.captures && !space.pages) {
+      return {
+        ...space,
+        pages: space.captures.length > 0 
+          ? [{ id: Date.now() + Math.random(), captures: space.captures }]
+          : [],
+        // Remove old captures property
+        captures: undefined
+      };
+    }
+    // If space already has pages format or no captures, return as is
+    return space.pages ? space : { ...space, pages: [] };
+  });
+};
+
 function App() {
   const [pdfDocuments, setPdfDocuments] = useState([]);
   const [spaces, setSpaces] = useState(() => {
-    // Lazy initializer to get spaces from localStorage only on first render
     const savedSpaces = localStorage.getItem('pdfWorkspaceSpaces');
-    return savedSpaces ? JSON.parse(savedSpaces) : [];
+    const parsedSpaces = savedSpaces ? JSON.parse(savedSpaces) : [];
+    return migrateOldSpacesToNewFormat(parsedSpaces);
   });
   const [activeSpaceId, setActiveSpaceId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -106,19 +124,29 @@ function App() {
             page: sourcePdf.currentPage,
             timestamp: new Date().toISOString()
           };
-          return { ...space, captures: [...(space.captures || []), newCapture] };
+          
+          // Add to first page by default, or create first page if none exist
+          const updatedPages = space.pages && space.pages.length > 0 
+            ? space.pages.map((page, index) => 
+                index === 0 
+                  ? { ...page, captures: [...page.captures, newCapture] }
+                  : page
+              )
+            : [{ id: Date.now(), captures: [newCapture] }];
+            
+          return { ...space, pages: updatedPages };
         }
         return space;
       })
     );
     showNotification('Capture added to space!', 'success');
   };
-  
+    
   const confirmCreateSpace = (name) => {
     const newSpace = {
       id: Date.now() + Math.random(),
       name: name,
-      captures: [],
+      pages: [{ id: Date.now(), captures: [] }], // Change to pages structure
       created: new Date().toISOString()
     };
     setSpaces(prev => [...prev, newSpace]);
@@ -145,63 +173,61 @@ function App() {
   
   const exportSpaceAsPdf = async (spaceId) => {
     const space = spaces.find(s => s.id === spaceId);
-    if (!space || !space.captures || space.captures.length === 0) {
+    if (!space || !space.pages || space.pages.length === 0) {
+      showNotification('No captures to export', 'warning');
+      return;
+    }
+    
+    const totalCaptures = space.pages.reduce((sum, page) => sum + page.captures.length, 0);
+    if (totalCaptures === 0) {
       showNotification('No captures to export', 'warning');
       return;
     }
     
     showNotification('Generating PDF...', 'info');
     try {
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        for (let i = 0; i < space.captures.length; i++) {
-            const capture = space.captures[i];
-            if (i > 0) pdf.addPage();
-            
-            const img = new Image();
-            img.src = capture.imageData;
-            await new Promise(resolve => { img.onload = resolve });
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 10;
-            const availableWidth = pageWidth - (margin * 2);
-            const availableHeight = pageHeight - (margin * 2);
-            
-            const imgRatio = img.width / img.height;
-            let finalWidth, finalHeight;
-            
-            if (img.width > img.height) {
-                finalWidth = availableWidth;
-                finalHeight = finalWidth / imgRatio;
-            } else {
-                finalHeight = availableHeight;
-                finalWidth = finalHeight * imgRatio;
-            }
-
-            if (finalHeight > availableHeight) {
-                finalHeight = availableHeight;
-                finalWidth = finalHeight * imgRatio;
-            }
-             if (finalWidth > availableWidth) {
-                finalWidth = availableWidth;
-                finalHeight = finalWidth / imgRatio;
-            }
-
-            const x = (pageWidth - finalWidth) / 2;
-            const y = (pageHeight - finalHeight) / 2;
-
-            pdf.addImage(capture.imageData, 'PNG', x, y, finalWidth, finalHeight);
-            pdf.setFontSize(8);
-            pdf.setTextColor(128, 128, 128);
-            pdf.text(`Source: ${capture.source}, Page: ${capture.page}`, margin, pageHeight - 5);
-        }
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let isFirstPage = true;
+      
+      for (const page of space.pages) {
+        if (page.captures.length === 0) continue;
         
-        const fileName = `${space.name.replace(/[^a-z0-9]/gi, '_')}_export.pdf`;
-        pdf.save(fileName);
-        showNotification('PDF exported successfully!', 'success');
+        if (!isFirstPage) pdf.addPage();
+        isFirstPage = false;
+        
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 10;
+        
+        // Layout captures on the page
+        await layoutCapturesOnPdfPage(pdf, page.captures, pageWidth, pageHeight, margin);
+      }
+      
+      const fileName = `${space.name.replace(/[^a-z0-9]/gi, '_')}_export.pdf`;
+      pdf.save(fileName);
+      showNotification('PDF exported successfully!', 'success');
     } catch (error) {
-        showNotification(`Error exporting PDF: ${error.message}`, 'error');
-        console.error("Export Error:", error);
+      showNotification(`Error exporting PDF: ${error.message}`, 'error');
+      console.error("Export Error:", error);
+    }
+  };
+
+  // Helper function for layout logic
+  const layoutCapturesOnPdfPage = async (pdf, captures, pageWidth, pageHeight, margin) => {
+    // Simple layout: stack vertically, but you can enhance this
+    const availableHeight = pageHeight - (margin * 2);
+    const captureHeight = availableHeight / captures.length;
+    
+    for (let i = 0; i < captures.length; i++) {
+      const capture = captures[i];
+      const img = new Image();
+      img.src = capture.imageData;
+      await new Promise(resolve => { img.onload = resolve });
+      
+      const y = margin + (i * captureHeight);
+      const availableWidth = pageWidth - (margin * 2);
+      
+      pdf.addImage(capture.imageData, 'PNG', margin, y, availableWidth, captureHeight - 5);
     }
   };
   
@@ -213,6 +239,88 @@ function App() {
       localStorage.removeItem('pdfWorkspaceSpaces');
       showNotification('All data cleared', 'success');
     }
+  };
+
+  const addNewPageToSpace = (spaceId) => {
+    setSpaces(prevSpaces =>
+      prevSpaces.map(space => {
+        if (space.id === spaceId) {
+          const newPage = { id: Date.now() + Math.random(), captures: [] };
+          return { ...space, pages: [...(space.pages || []), newPage] };
+        }
+        return space;
+      })
+    );
+    showNotification('New page added to space!', 'success');
+  };
+
+  const deletePageFromSpace = (spaceId, pageId) => {
+    setSpaces(prevSpaces =>
+      prevSpaces.map(space => {
+        if (space.id === spaceId) {
+          const updatedPages = space.pages.filter(page => page.id !== pageId);
+          return { ...space, pages: updatedPages };
+        }
+        return space;
+      })
+    );
+    showNotification('Page deleted!', 'success');
+  };
+
+  const updatePageCaptures = (spaceId, pageId, newCaptures) => {
+    setSpaces(prevSpaces =>
+      prevSpaces.map(space => {
+        if (space.id === spaceId) {
+          const updatedPages = space.pages.map(page =>
+            page.id === pageId ? { ...page, captures: newCaptures } : page
+          );
+          return { ...space, pages: updatedPages };
+        }
+        return space;
+      })
+    );
+  };
+  const handleCaptureMove = (spaceId, pageId, newCaptures, captureItem) => {
+    setSpaces(prevSpaces =>
+      prevSpaces.map(space => {
+        if (space.id === spaceId) {
+          const updatedPages = space.pages.map(page => {
+            if (page.id === pageId) {
+              // This is the target page, set the new captures
+              return { ...page, captures: newCaptures };
+            } else {
+              // Remove the moved capture from other pages in the same space
+              return {
+                ...page,
+                captures: page.captures.filter(capture => capture.id !== captureItem.id)
+              };
+            }
+          });
+          return { ...space, pages: updatedPages };
+        }
+        return space;
+      })
+    );
+  };
+  const moveCaptureBetweenPages = (spaceId, captureId, fromPageId, toPageId) => {
+    setSpaces(prevSpaces =>
+      prevSpaces.map(space => {
+        if (space.id === spaceId) {
+          let captureToMove = null;
+          const updatedPages = space.pages.map(page => {
+            if (page.id === fromPageId) {
+              captureToMove = page.captures.find(c => c.id === captureId);
+              return { ...page, captures: page.captures.filter(c => c.id !== captureId) };
+            } else if (page.id === toPageId && captureToMove) {
+              return { ...page, captures: [...page.captures, captureToMove] };
+            }
+            return page;
+          });
+          return { ...space, pages: updatedPages };
+        }
+        return space;
+      })
+    );
   };
 
   return (
@@ -254,7 +362,11 @@ function App() {
             onSetActiveSpace={setActiveSpaceId}
             onDeleteSpace={deleteSpace}
             onExportSpace={exportSpaceAsPdf}
-            onUpdateCaptures={updateSpaceCaptures}
+            onUpdateCaptures={updatePageCaptures}
+            onCaptureMove={handleCaptureMove} // Add this new prop
+            onAddNewPage={addNewPageToSpace}
+            onDeletePage={deletePageFromSpace}
+            onMoveCapturesBetweenPages={moveCaptureBetweenPages}
           />
         </div>
       </div>
