@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Use a recent LTS version of Node.js
+          node-version: '20' # Use a recent LTS version of Node.js
           cache: 'npm'       # Cache npm dependencies for faster builds
 
       # 3. Installs dependencies and builds the production-ready static files

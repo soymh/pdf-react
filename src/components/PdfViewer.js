@@ -56,28 +56,70 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
     setSelectionRect(prev => ({ ...prev, endX: x, endY: y }));
   };
   
-  const handleMouseUp = () => {
+  const handleMouseUp = async () => { // Make the function async
     if (!isSelecting || !selectionRect) return;
 
     const { startX, endX, startY, endY } = selectionRect;
-    const width = Math.abs(endX - startX);
-    const height = Math.abs(endY - startY);
+    const canvas = canvasRef.current;
+    
+    // Normalize coordinates
+    const rectX = Math.min(startX, endX);
+    const rectY = Math.min(startY, endY);
+    const rectWidth = Math.abs(endX - startX);
+    const rectHeight = Math.abs(endY - startY);
 
-    if (width > 15 && height > 15) { // Minimum selection size
-      const canvas = canvasRef.current;
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = width;
-      tempCanvas.height = height;
-      const tempCtx = tempCanvas.getContext('2d');
-      const left = Math.min(startX, endX);
-      const top = Math.min(startY, endY);
-      
-      // Higher quality capture
-      tempCtx.imageSmoothingEnabled = true;
-      tempCtx.imageSmoothingQuality = 'high';
-      tempCtx.drawImage(canvas, left, top, width, height, 0, 0, width, height);
-      const imageData = tempCanvas.toDataURL('image/png', 1.0); // Maximum quality
-      onCapture(imageData, pdfData);
+    if (rectWidth > 15 && rectHeight > 15) { // Minimum selection size
+      try {
+        // --- High-Quality Capture Logic ---
+        const page = await pdfData.pdf.getPage(pdfData.currentPage);
+        const captureScale = 5.0; // Increase for higher quality - 5x resolution
+        const viewport = page.getViewport({ scale: captureScale });
+
+        // Create a temporary, high-res canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = viewport.width;
+        tempCanvas.height = viewport.height;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // Render the page at high resolution
+        await page.render({
+          canvasContext: tempCtx,
+          viewport: viewport,
+        }).promise;
+        
+        // Calculate the source coordinates on the high-res canvas.
+        // We need to scale the selection box coordinates from the display canvas size
+        // to the high-res canvas size.
+        const scaleX = tempCanvas.width / canvas.width;
+        const scaleY = tempCanvas.height / canvas.height;
+
+        const sourceX = rectX * scaleX;
+        const sourceY = rectY * scaleY;
+        const sourceWidth = rectWidth * scaleX;
+        const sourceHeight = rectHeight * scaleY;
+
+        // Create a final canvas to hold just the captured snippet
+        const captureCanvas = document.createElement('canvas');
+        captureCanvas.width = sourceWidth;
+        captureCanvas.height = sourceHeight;
+        const captureCtx = captureCanvas.getContext('2d');
+        
+        captureCtx.imageSmoothingEnabled = true;
+        captureCtx.imageSmoothingQuality = 'high';
+
+        // Copy the selected region from the high-res canvas to the snippet canvas
+        captureCtx.drawImage(
+          tempCanvas,
+          sourceX, sourceY, sourceWidth, sourceHeight, // Source rect
+          0, 0, sourceWidth, sourceHeight // Destination rect
+        );
+
+        // Get the final high-quality image data
+        const imageData = captureCanvas.toDataURL('image/png', 1.0); // Use PNG for quality
+        onCapture(imageData, pdfData);
+      } catch (error) {
+        console.error("Error during high-quality capture:", error);
+      }
     }
     
     setIsSelecting(false);
