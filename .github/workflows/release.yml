@@ -13,6 +13,8 @@ jobs:
   build-and-release:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create releases
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -56,3 +58,4 @@ jobs:
           # Attaches the zipped build folder to the release
           files: |
             build.zip
+```
