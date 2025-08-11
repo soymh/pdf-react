@@ -1,0 +1,58 @@
+# .github/workflows/release.yml
+
+name: Create Release
+
+# This action runs on every push to a tag that starts with 'v' (e.g., v1.0, v1.1.0)
+on:
+  push:
+    tags:
+      - 'v*'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build-and-release:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # 1. Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Sets up Node.js for building the project
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Use a recent LTS version of Node.js
+          cache: 'npm'       # Cache npm dependencies for faster builds
+
+      # 3. Installs dependencies and builds the production-ready static files
+      - name: Install dependencies and build
+        run: |
+          npm ci
+          npm run build
+
+      # 4. Zips the build folder so it can be uploaded as a single file
+      - name: Create ZIP of build files
+        run: zip -r build.zip ./build
+
+      # 5. This is the magic step that creates the release
+      # It uses a popular, trusted community action to handle the logic.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # This token is provided by GitHub Actions, it has permission to create releases
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # This will create the release notes automatically from your commit history
+          generate_release_notes: true
+          # The name of the release will be the same as the tag
+          name: Release ${{ github.ref_name }}
+          # The body of the release notes will be automatically generated
+          # You can add custom text here if you want
+          body: |
+            Automated release for version ${{ github.ref_name }}.
+            Download the production build files below.
+          # Attaches the zipped build folder to the release
+          files: |
+            build.zip
