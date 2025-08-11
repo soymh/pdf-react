@@ -127,11 +127,13 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   };
   
   const getSelectionStyle = () => {
-    if (!selectionRect) return { display: 'none' };
+    if (!selectionRect || !canvasRef.current) return { display: 'none' };
     const { startX, endX, startY, endY } = selectionRect;
+    const canvas = canvasRef.current;
     return {
-      left: Math.min(startX, endX) + 'px',
-      top: Math.min(startY, endY) + 'px',
+      // Add the canvas's offset within its container to correctly position the overlay
+      left: Math.min(startX, endX) + canvas.offsetLeft + 'px',
+      top: Math.min(startY, endY) + canvas.offsetTop + 'px',
       width: Math.abs(endX - startX) + 'px',
       height: Math.abs(endY - startY) + 'px',
     };
