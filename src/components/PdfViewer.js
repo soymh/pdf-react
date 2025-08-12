@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 
 function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   const canvasRef = useRef(null);
+  const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
   const [scale, setScale] = useState(1.5); // Increased default scale for better readability
@@ -9,35 +10,73 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   useEffect(() => {
     const renderPage = async () => {
       if (!pdfData.pdf) return;
+      
       try {
+        // Cancel any ongoing render operation
+        if (renderTaskRef.current) {
+          try {
+            renderTaskRef.current.cancel();
+          } catch (e) {
+            // Ignore cancellation errors
+          }
+          renderTaskRef.current = null;
+        }
+        
         const page = await pdfData.pdf.getPage(pdfData.currentPage);
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
+        
+        // Create a completely new canvas for this render operation
+        const newCanvas = document.createElement('canvas');
+        const context = newCanvas.getContext('2d');
         
         // Calculate optimal scale based on container width
-        const container = canvas.parentElement;
-        const containerWidth = container.clientWidth - 40; // Account for padding
+        const container = canvasRef.current?.parentElement;
+        const containerWidth = container ? container.clientWidth - 40 : 400;
         const viewport = page.getViewport({ scale: 1 });
         const optimalScale = Math.min(scale, containerWidth / viewport.width);
         
         const scaledViewport = page.getViewport({ scale: optimalScale });
-        canvas.height = scaledViewport.height;
-        canvas.width = scaledViewport.width;
+        newCanvas.height = scaledViewport.height;
+        newCanvas.width = scaledViewport.width;
         
-        // Clear canvas before rendering
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Render with higher quality
-        await page.render({ 
+        // Store the render task and wait for it to complete
+        renderTaskRef.current = page.render({ 
           canvasContext: context, 
           viewport: scaledViewport,
           renderInteractiveForms: true
-        }).promise;
+        });
+        
+        await renderTaskRef.current.promise;
+        
+        // Only update the DOM canvas if this render wasn't cancelled
+        if (renderTaskRef.current && canvasRef.current) {
+          const oldCanvas = canvasRef.current;
+          const oldContext = oldCanvas.getContext('2d');
+          
+          // Match dimensions
+          oldCanvas.width = newCanvas.width;
+          oldCanvas.height = newCanvas.height;
+          
+          // Clear and copy the rendered content
+          oldContext.clearRect(0, 0, oldCanvas.width, oldCanvas.height);
+          oldContext.drawImage(newCanvas, 0, 0);
+        }
+        
+        renderTaskRef.current = null;
+        
       } catch (error) {
-        console.error("Error rendering PDF page:", error);
+        if (error.name !== 'RenderingCancelledException') {
+          console.error("Error rendering PDF page:", error);
+        }
+        renderTaskRef.current = null;
       }
     };
     renderPage();
+    return () => {
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+    };
   }, [pdfData.pdf, pdfData.currentPage, scale]);
 
   const handleMouseDown = (e) => {

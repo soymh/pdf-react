@@ -84,7 +84,7 @@ function SpacesPanel({
               onDelete={onDeleteSpace}
               onExport={onExportSpace}
               onUpdateCaptures={onUpdateCaptures}
-              onCaptureMove={onCaptureMove} // Add this prop
+              // REMOVE THIS LINE: onCaptureMove={onCaptureMove}
               onAddNewPage={onAddNewPage}
               onDeletePage={onDeletePage}
               isDragging={isDragging}

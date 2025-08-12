@@ -17,16 +17,13 @@ function SpaceItem({
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoomedCapture, setZoomedCapture] = useState(null);
 
-  const handleCaptureAdd = (newCaptures, pageId, evt) => {
-    if (evt.from !== evt.to) {
-      const movedCapture = newCaptures.find(capture => 
-        capture.id === evt.item.getAttribute('data-id')
-      );
-      if (movedCapture && onCaptureMove) {
-        onCaptureMove(space.id, pageId, newCaptures, movedCapture);
-        return;
-      }
+  const handleCaptureAdd = (newCaptures, pageId, sortable, evt) => {
+    // Prevent the workspace reload by stopping event propagation
+    if (evt && evt.originalEvent) {
+      evt.originalEvent.stopPropagation();
     }
+    
+    // Simply update the captures for this page
     onUpdateCaptures(space.id, pageId, newCaptures);
   };
 
@@ -95,22 +92,18 @@ function SpaceItem({
                   <div className="capture-grid">
                     <ReactSortable
                       list={page.captures}
-                      setList={(newCaptures, sortable, evt) => handleCaptureAdd(newCaptures, page.id, evt)}
+                      setList={(newCaptures) => onUpdateCaptures(space.id, page.id, newCaptures)}
                       animation={150}
                       ghostClass="sortable-ghost"
                       chosenClass="sortable-chosen"
-                      group={{
-                        name: `space-${space.id}`,
-                        pull: true,
-                        put: true
-                      }}
+                      group="shared-captures"
                       onStart={() => setIsDragging && setIsDragging(true)}
                       onEnd={() => setIsDragging && setIsDragging(false)}
                       forceFallback={true}
                       fallbackClass="sortable-fallback"
                     >
-                      {page.captures.map(capture => (
-                        <div key={capture.id} className="capture-thumbnail-container">
+                      {page.captures.map((capture, index) => (
+                        <div key={`${page.id}-${capture.id}`} className="capture-thumbnail-container">
                           <img
                             data-id={capture.id}
                             src={capture.imageData}
@@ -118,7 +111,10 @@ function SpaceItem({
                             alt="Captured snippet"
                             title={`From: ${capture.source}, Page: ${capture.page} - Click to zoom`}
                             draggable={true}
-                            onClick={() => handleCaptureClick(capture)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCaptureClick(capture);
+                            }}
                           />
                         </div>
                       ))}

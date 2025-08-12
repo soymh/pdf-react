@@ -311,24 +311,41 @@ function App() {
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
-          const updatedPages = space.pages.map(page =>
-            page.id === pageId ? { ...page, captures: newCaptures } : page
-          );
+          const updatedPages = space.pages.map(page => {
+            if (page.id === pageId) {
+              // Remove duplicates based on capture ID
+              const uniqueCaptures = newCaptures.filter((capture, index, self) => 
+                index === self.findIndex(c => c.id === capture.id)
+              );
+              return { ...page, captures: uniqueCaptures };
+            } else {
+              // Remove any captures that now exist in the target page
+              const newCaptureIds = newCaptures.map(c => c.id);
+              return {
+                ...page,
+                captures: page.captures.filter(c => !newCaptureIds.includes(c.id))
+              };
+            }
+          });
           return { ...space, pages: updatedPages };
         }
         return space;
       })
     }));
   };
-  const handleCaptureMove = async (spaceId, pageId, newCaptures, captureItem) => {
+  const handleCaptureMove = async (spaceId, targetPageId, newCaptures, captureItem) => {
     await updateWorkspace(w => ({
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           const updatedPages = space.pages.map(page => {
-            if (page.id === pageId) {
-              return { ...page, captures: newCaptures };
+            if (page.id === targetPageId) {
+              // Add to target page (remove duplicates first)
+              const existingIds = page.captures.map(c => c.id);
+              const filteredNewCaptures = newCaptures.filter(c => !existingIds.includes(c.id));
+              return { ...page, captures: [...page.captures, ...filteredNewCaptures] };
             } else {
+              // Remove from source pages
               return {
                 ...page,
                 captures: page.captures.filter(capture => capture.id !== captureItem.id)
