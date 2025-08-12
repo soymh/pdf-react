@@ -2,46 +2,30 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
 import { jsPDF } from "jspdf";
 
+import * as db from './db';
+
 import Header from './components/Header';
 import PdfViewer from './components/PdfViewer';
 import SpacesPanel from './components/SpacesPanel';
 import CreateSpaceModal from './components/CreateSpaceModal';
+import CreateWorkspaceModal from './components/CreateWorkspaceModal';
+import WorkspacesPanel from './components/WorkspacesPanel';
 import Notification from './components/Notification';
 import './App.css';
 
-// Set up the PDF.js worker
-// GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${require('pdfjs-dist/package.json').version}/pdf.worker.min.js`;
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
-const migrateOldSpacesToNewFormat = (spaces) => {
-  return spaces.map(space => {
-    // If space has old 'captures' format, migrate it
-    if (space.captures && !space.pages) {
-      return {
-        ...space,
-        pages: space.captures.length > 0 
-          ? [{ id: Date.now() + Math.random(), captures: space.captures }]
-          : [],
-        // Remove old captures property
-        captures: undefined
-      };
-    }
-    // If space already has pages format or no captures, return as is
-    return space.pages ? space : { ...space, pages: [] };
-  });
-};
-
 function App() {
-  const [pdfDocuments, setPdfDocuments] = useState([]);
-  const [spaces, setSpaces] = useState(() => {
-    const savedSpaces = localStorage.getItem('pdfWorkspaceSpaces');
-    const parsedSpaces = savedSpaces ? JSON.parse(savedSpaces) : [];
-    return migrateOldSpacesToNewFormat(parsedSpaces);
-  });
-  const [activeSpaceId, setActiveSpaceId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(null);
+  const [livePdfDocs, setLivePdfDocs] = useState([]);
+  const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const spaces = activeWorkspace ? activeWorkspace.spaces : [];
+  const activeSpaceId = activeWorkspace ? activeWorkspace.activeSpaceId : null;
   const showNotification = useCallback((message, type = 'info') => {
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
@@ -50,77 +34,132 @@ function App() {
     }, 3000);
   }, []);
 
-  // Effect to save spaces to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('pdfWorkspaceSpaces', JSON.stringify(spaces));
-  }, [spaces]);
-  
-  // Welcome notification on first load
+    async function loadInitialData() {
+      const allWorkspaces = await db.getAllWorkspaces();
+      if (allWorkspaces.length > 0) {
+        setWorkspaces(allWorkspaces);
+        const lastActiveId = JSON.parse(localStorage.getItem('pdfLastActiveWorkspaceId'));
+        setActiveWorkspaceId(lastActiveId || allWorkspaces[0].id);
+      } else {
+        const defaultWorkspace = {
+          id: Date.now(), name: 'Main Workspace', pdfDocuments: [], spaces: [], activeSpaceId: null,
+        };
+        await db.saveWorkspace(defaultWorkspace);
+        setWorkspaces([defaultWorkspace]);
+        setActiveWorkspaceId(defaultWorkspace.id);
+      }
+    }
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!activeWorkspace) {
+      setLivePdfDocs([]);
+      return;
+    }
+
+    const loadPdfObjects = async () => {
+      showNotification(`Loading workspace '${activeWorkspace.name}'...`, 'info');
+      const pdfsToLoad = activeWorkspace.pdfDocuments || [];
+    const loadedPdfs = await Promise.all(
+        pdfsToLoad.map(async (docInfo) => {
+          const pdfRecord = await db.getPdf(docInfo.id);
+          if (pdfRecord) {
+          try {
+              const pdf = await require('pdfjs-dist').getDocument(pdfRecord.data).promise;
+              return { id: docInfo.id, name: docInfo.name, pdf, currentPage: 1, totalPages: pdf.numPages };
+            } catch (error) {
+              showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
+            return null;
+          }
+          }
+        return null;
+      })
+    );
+      setLivePdfDocs(loadedPdfs.filter(Boolean));
+  };
+
+    loadPdfObjects();
+  }, [activeWorkspace, showNotification]);
+
   useEffect(() => {
     const notificationId = setTimeout(() => {
     showNotification('🌟 Welcome to PDF Workspace - Cyberpunk Edition! 🌟', 'success');
-    }, 1000); // Delay to ensure UI is ready
+    }, 1000);
 
     return () => clearTimeout(notificationId);
   }, [showNotification]);
 
-  const handleFileSelect = async (event) => {
-    const files = Array.from(event.target.files);
-    setPdfDocuments([]); // Clear previous PDFs
-
-    if (files.length === 0) {
-      showNotification('No files selected', 'warning');
-      return;
-    }
-
-    showNotification(`Loading ${files.length} PDF(s)...`, 'info');
-
-    const loadedPdfs = await Promise.all(
-      files.map(async (file) => {
-        if (file.type === 'application/pdf') {
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await require('pdfjs-dist').getDocument(arrayBuffer).promise;
-            return {
-              id: Date.now() + Math.random(),
-              name: file.name,
-              pdf: pdf,
-              currentPage: 1,
-              totalPages: pdf.numPages,
-            };
-          } catch (error) {
-            showNotification(`Error loading ${file.name}: ${error.message}`, 'error');
-            return null;
-          }
-        }
-        return null;
-      })
-    );
-
-    setPdfDocuments(loadedPdfs.filter(Boolean));
+  const handleCreateWorkspace = async (name) => {
+    const newWorkspace = { id: Date.now(), name, pdfDocuments: [], spaces: [], activeSpaceId: null };
+    await db.saveWorkspace(newWorkspace);
+    setWorkspaces(prev => [...prev, newWorkspace]);
+    setActiveWorkspaceId(newWorkspace.id);
+    setIsWorkspaceModalOpen(false);
+    showNotification(`Workspace "${name}" created!`, 'success');
   };
 
-  const removePDF = (pdfId) => {
-    setPdfDocuments(docs => docs.filter(doc => doc.id !== pdfId));
+  const handleSetActiveWorkspace = (id) => {
+    setActiveWorkspaceId(id);
+    localStorage.setItem('pdfLastActiveWorkspaceId', JSON.stringify(id));
+  };
+  
+  const updateWorkspace = async (updater) => {
+      const updatedWorkspace = updater(activeWorkspace);
+      await db.saveWorkspace(updatedWorkspace);
+      setWorkspaces(prev => prev.map(w => w.id === activeWorkspaceId ? updatedWorkspace : w));
+  };
+
+  const handleFileSelect = async (event) => {
+    const files = Array.from(event.target.files).filter(f => f.type === 'application/pdf');
+    if (files.length === 0) return;
+
+    showNotification(`Storing ${files.length} PDF(s)...`, 'info');
+
+    const newPdfInfos = [];
+    for (const file of files) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfId = Date.now() + Math.random();
+      await db.savePdf({ id: pdfId, data: arrayBuffer });
+      newPdfInfos.push({ id: pdfId, name: file.name });
+    }
+    await updateWorkspace(w => ({
+      ...w,
+      pdfDocuments: [...w.pdfDocuments, ...newPdfInfos],
+    }));
+    showNotification('PDFs loaded successfully!', 'success');
+  };
+    
+  const removePDF = async (pdfId) => {
+    await db.deletePdf(pdfId);
+    await updateWorkspace(w => ({
+      ...w,
+      pdfDocuments: w.pdfDocuments.filter(doc => doc.id !== pdfId),
+    }));
   };
 
   const updatePdfPage = (pdfId, newPage) => {
-    setPdfDocuments(docs =>
+    setLivePdfDocs(docs =>
       docs.map(doc =>
         doc.id === pdfId ? { ...doc, currentPage: newPage } : doc
       )
     );
   };
-  
-  const handleCapture = (imageData, sourcePdf) => {
-    if (!activeSpaceId || !spaces.find(s => s.id === activeSpaceId)) {
+
+  const setActiveSpaceId = async (spaceId) => {
+    await updateWorkspace(w => ({ ...w, activeSpaceId: spaceId }));
+              };
+
+  const handleCapture = async (imageData, sourcePdf) => {
+    if (!activeSpaceId) {
       showNotification('Select a space first or create a new one', 'warning');
       return;
-    }
-
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
-        if (space.id === activeSpaceId) {
+            }
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
+        if (space.id === w.activeSpaceId) {
           const newCapture = {
             id: Date.now() + Math.random(),
             imageData: imageData,
@@ -128,11 +167,10 @@ function App() {
             page: sourcePdf.currentPage,
             timestamp: new Date().toISOString()
           };
-          
-          // Add to first page by default, or create first page if none exist
-          const updatedPages = space.pages && space.pages.length > 0 
-            ? space.pages.map((page, index) => 
-                index === 0 
+
+          const updatedPages = space.pages && space.pages.length > 0
+            ? space.pages.map((page, index) =>
+                index === 0
                   ? { ...page, captures: [...page.captures, newCapture] }
                   : page
               )
@@ -142,29 +180,33 @@ function App() {
         }
         return space;
       })
-    );
+    }));
     showNotification('Capture added to space!', 'success');
   };
-    
-  const confirmCreateSpace = (name) => {
+
+  const confirmCreateSpace = async (name) => {
     const newSpace = {
       id: Date.now() + Math.random(),
       name: name,
-      pages: [{ id: Date.now(), captures: [] }], // Change to pages structure
+      pages: [{ id: Date.now(), captures: [] }],
       created: new Date().toISOString()
     };
-    setSpaces(prev => [...prev, newSpace]);
-    setActiveSpaceId(newSpace.id);
-    setIsModalOpen(false);
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: [...w.spaces, newSpace],
+      activeSpaceId: newSpace.id
+    }));
+    setIsSpaceModalOpen(false);
     showNotification(`Space "${name}" created!`, 'success');
   };
 
-  const deleteSpace = (spaceId) => {
+  const deleteSpace = async (spaceId) => {
     if (window.confirm('Are you sure you want to delete this space? This action cannot be undone.')) {
-      setSpaces(spaces => spaces.filter(s => s.id !== spaceId));
-      if (activeSpaceId === spaceId) {
-        setActiveSpaceId(null);
-      }
+      await updateWorkspace(w => ({
+        ...w,
+        spaces: w.spaces.filter(s => s.id !== spaceId),
+        activeSpaceId: w.activeSpaceId === spaceId ? null : w.activeSpaceId
+      }));
       showNotification('Space deleted', 'success');
     }
   };
@@ -196,8 +238,7 @@ function App() {
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const margin = 10;
-        
-        // Layout captures on the page
+
         await layoutCapturesOnPdfPage(pdf, page.captures, pageWidth, pageHeight, margin);
       }
       
@@ -210,9 +251,7 @@ function App() {
     }
   };
 
-  // Helper function for layout logic
   const layoutCapturesOnPdfPage = async (pdf, captures, pageWidth, pageHeight, margin) => {
-    // Simple layout: stack vertically, but you can enhance this
     const availableHeight = pageHeight - (margin * 2);
     const captureHeight = availableHeight / captures.length;
     
@@ -228,46 +267,49 @@ function App() {
       pdf.addImage(capture.imageData, 'PNG', margin, y, availableWidth, captureHeight - 5);
     }
   };
-  
-  const clearAll = () => {
+
+  const clearAll = async () => {
     if (window.confirm('Are you sure you want to clear all PDFs and spaces? This action cannot be undone.')) {
-      setPdfDocuments([]);
-      setSpaces([]);
-      setActiveSpaceId(null);
-      localStorage.removeItem('pdfWorkspaceSpaces');
+      await setWorkspaces([]);
+      await setActiveWorkspaceId(null);
+      localStorage.removeItem('pdfWorkspaces');
+      localStorage.removeItem('pdfLastActiveWorkspaceId');
       showNotification('All data cleared', 'success');
     }
   };
 
-  const addNewPageToSpace = (spaceId) => {
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
+  const addNewPageToSpace = async (spaceId) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           const newPage = { id: Date.now() + Math.random(), captures: [] };
           return { ...space, pages: [...(space.pages || []), newPage] };
         }
         return space;
       })
-    );
+    }));
     showNotification('New page added to space!', 'success');
   };
 
-  const deletePageFromSpace = (spaceId, pageId) => {
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
+  const deletePageFromSpace = async (spaceId, pageId) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           const updatedPages = space.pages.filter(page => page.id !== pageId);
           return { ...space, pages: updatedPages };
         }
         return space;
       })
-    );
+    }));
     showNotification('Page deleted!', 'success');
   };
 
-  const updatePageCaptures = (spaceId, pageId, newCaptures) => {
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
+  const updatePageCaptures = async (spaceId, pageId, newCaptures) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           const updatedPages = space.pages.map(page =>
             page.id === pageId ? { ...page, captures: newCaptures } : page
@@ -276,18 +318,17 @@ function App() {
         }
         return space;
       })
-    );
+    }));
   };
-  const handleCaptureMove = (spaceId, pageId, newCaptures, captureItem) => {
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
+  const handleCaptureMove = async (spaceId, pageId, newCaptures, captureItem) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           const updatedPages = space.pages.map(page => {
             if (page.id === pageId) {
-              // This is the target page, set the new captures
               return { ...page, captures: newCaptures };
             } else {
-              // Remove the moved capture from other pages in the same space
               return {
                 ...page,
                 captures: page.captures.filter(capture => capture.id !== captureItem.id)
@@ -298,11 +339,12 @@ function App() {
         }
         return space;
       })
-    );
+    }));
   };
-  const moveCaptureBetweenPages = (spaceId, captureId, fromPageId, toPageId) => {
-    setSpaces(prevSpaces =>
-      prevSpaces.map(space => {
+  const moveCaptureBetweenPages = async (spaceId, captureId, fromPageId, toPageId) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           let captureToMove = null;
           const updatedPages = space.pages.map(page => {
@@ -318,37 +360,45 @@ function App() {
         }
         return space;
       })
-    );
+    }));
   };
 
   return (
     <>
       <div className="cyber-grid"></div>
-      <div className="container">
-        <Header 
-          onLoadClick={() => document.getElementById('fileInput').click()} 
-          onCreateSpace={() => setIsModalOpen(true)}
+
+      <WorkspacesPanel
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        onSetActive={handleSetActiveWorkspace}
+        onCreate={() => setIsWorkspaceModalOpen(true)}
+      />
+
+      <div className="container" style={{ marginLeft: '250px' }}>
+        <Header
+          onLoadClick={() => activeWorkspaceId && document.getElementById('fileInput').click()}
+          onCreateSpace={() => activeWorkspaceId && setIsSpaceModalOpen(true)}
+          onCreateWorkspace={() => setIsWorkspaceModalOpen(true)}
           onClearAll={clearAll}
         />
 
-        <div className="main-content">
-<div className="pdf-viewers" id="pdfViewers">
-  {pdfDocuments.length > 0 ? (
-    // Find this line
-    pdfDocuments.map((doc, index) => ( // <-- Add 'index' here
-	      <PdfViewer 
-		key={doc.id} 
-		pdfData={doc}
-		index={index} // <-- Pass the index as a prop
-		onRemove={removePDF}
-		onPageChange={updatePdfPage}
-		onCapture={handleCapture}
-	      />
-	    ))
-	) : (
+        <div className="main-content" style={{ marginLeft: 0 }}>
+          <div className="pdf-viewers" id="pdfViewers">
+            {livePdfDocs.length > 0 ? (
+              livePdfDocs.map((doc, index) => (
+                <PdfViewer
+                  key={doc.id}
+                  pdfData={doc}
+                  index={index}
+                  onRemove={removePDF}
+                  onPageChange={updatePdfPage}
+                  onCapture={handleCapture}
+                />
+              ))
+            ) : (
               <div className="empty-state">
                 <h3>🌌 READY FOR DIGITAL EXPLORATION</h3>
-                <p>Load your PDFs to begin the cybernetic document journey</p>
+                <p>{activeWorkspace ? 'Load your PDFs to begin.' : 'Create or select a workspace.'}</p>
               </div>
             )}
           </div>
@@ -356,12 +406,12 @@ function App() {
           <SpacesPanel
             spaces={spaces}
             activeSpaceId={activeSpaceId}
-            onCreateSpace={() => setIsModalOpen(true)}
+            onCreateSpace={() => activeWorkspaceId && setIsSpaceModalOpen(true)}
             onSetActiveSpace={setActiveSpaceId}
             onDeleteSpace={deleteSpace}
             onExportSpace={exportSpaceAsPdf}
             onUpdateCaptures={updatePageCaptures}
-            onCaptureMove={handleCaptureMove} // Add this new prop
+            onCaptureMove={handleCaptureMove}
             onAddNewPage={addNewPageToSpace}
             onDeletePage={deletePageFromSpace}
             onMoveCapturesBetweenPages={moveCaptureBetweenPages}
@@ -369,19 +419,27 @@ function App() {
         </div>
       </div>
 
-      <input 
-        type="file" 
-        id="fileInput" 
-        className="file-input" 
-        multiple 
+      <input
+        type="file"
+        id="fileInput"
+        className="file-input"
+        multiple
         accept=".pdf"
         onChange={handleFileSelect}
+        disabled={!activeWorkspaceId}
       />
-      
-      {isModalOpen && (
-        <CreateSpaceModal 
+
+      {isSpaceModalOpen && (
+        <CreateSpaceModal
           onConfirm={confirmCreateSpace}
-          onCancel={() => setIsModalOpen(false)}
+          onCancel={() => setIsSpaceModalOpen(false)}
+        />
+      )}
+
+      {isWorkspaceModalOpen && (
+        <CreateWorkspaceModal
+          onConfirm={handleCreateWorkspace}
+          onCancel={() => setIsWorkspaceModalOpen(false)}
         />
       )}
 

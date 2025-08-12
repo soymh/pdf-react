@@ -151,16 +151,88 @@
             transition: left 0.5s;
         }
 
-        .cyber-button:hover::before {
-            left: 100%;
-        }
         .main-content {
             flex: 1;
             display: flex;
             overflow: hidden;
             position: relative;
+            /* Adjust for the new workspaces panel on the left */
+            margin-left: 250px;
             margin-top: 25px; /* Space for collapsed header */
         }
+        /* --- Styles for the new WorkspacesPanel --- */
+        .workspaces-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 25; /* Higher than spaces panel */
+        width: 250px;
+        background: rgba(10, 10, 20, 0.95);
+        border-right: 2px solid #9333ea;
+        backdrop-filter: blur(15px);
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .workspaces-header {
+        font-size: 20px;
+        text-align: center;
+        padding: 15px;
+        color: #e0e6ff;
+        text-shadow: 0 0 15px #9333ea;
+        border-bottom: 1px solid rgba(147, 51, 234, 0.4);
+        }
+
+        .workspaces-list {
+        flex: 1;
+        overflow-y: auto;
+        margin-top: 15px;
+        }
+
+        .workspace-tab {
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        background: rgba(22, 33, 62, 0.7);
+        border: 1px solid rgba(147, 51, 234, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        }
+
+        .workspace-tab:hover {
+        background: rgba(83, 52, 131, 0.6);
+        border-color: #9333ea;
+        transform: translateX(5px);
+        }
+
+        .workspace-tab.active {
+        background: #9333ea;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 0 20px rgba(147, 51, 234, 0.7);
+        }
+
+        .new-workspace-btn {
+        margin-top: 15px;
+        width: 100%;
+        }
+
+        .pdf-viewers {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            overflow-x: auto;
+            background: rgba(10, 10, 10, 0.5);
+            /* Remove the right padding to use full space */
+            padding-right: 15px;
+            scroll-behavior: smooth;
+        }
+
         /* Enhanced PDF Viewers Layout */
         .pdf-viewers {
             flex: 1;
