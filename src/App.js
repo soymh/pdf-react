@@ -218,60 +218,162 @@ function App() {
   };
   
   const exportSpaceAsPdf = async (spaceId) => {
-    const space = spaces.find(s => s.id === spaceId);
-    if (!space || !space.pages || space.pages.length === 0) {
-      showNotification('No captures to export', 'warning');
-      return;
-    }
-    
-    const totalCaptures = space.pages.reduce((sum, page) => sum + page.captures.length, 0);
-    if (totalCaptures === 0) {
-      showNotification('No captures to export', 'warning');
-      return;
-    }
-    
-    showNotification('Generating PDF...', 'info');
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let isFirstPage = true;
-      
-      for (const page of space.pages) {
-        if (page.captures.length === 0) continue;
-        
-        if (!isFirstPage) pdf.addPage();
-        isFirstPage = false;
-        
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 10;
-
-        await layoutCapturesOnPdfPage(pdf, page.captures, pageWidth, pageHeight, margin);
+      // Find the space by ID
+      const space = spaces.find(s => s.id === spaceId);
+      if (!space || !Array.isArray(space.pages)) {
+        throw new Error('Invalid space or missing pages');
       }
-      
-      const fileName = `${space.name.replace(/[^a-z0-9]/gi, '_')}_export.pdf`;
-      pdf.save(fileName);
-      showNotification('PDF exported successfully!', 'success');
+
+      showNotification('info', 'Preparing PDF export...');
+
+      const pdf = new jsPDF();
+      let currentPage = 0;
+      let hasContent = false;
+
+      // Filter out empty pages first
+      const pagesWithCaptures = space.pages.filter(page => 
+        Array.isArray(page.captures) && page.captures.length > 0
+      );
+
+      if (pagesWithCaptures.length === 0) {
+        throw new Error('No content to export - space is empty');
+      }
+
+      // Process each page in sequence
+      for (const page of pagesWithCaptures) {
+        // Skip pages with no captures
+        if (!Array.isArray(page.captures) || page.captures.length === 0) {
+          continue;
+        }
+
+        // Add a new page for each page except the first
+        if (currentPage > 0) {
+          pdf.addPage();
+        }
+
+        // Sort captures by z-index if specified
+        const sortedCaptures = [...page.captures].sort((a, b) => 
+          (a.zIndex || 0) - (b.zIndex || 0)
+        );
+
+        // Layout the captures with their transformations
+        const pageHasContent = await layoutCapturesOnPdfPage(pdf, sortedCaptures);
+        if (pageHasContent) {
+          hasContent = true;
+          currentPage++;
+          showNotification('info', `Processing page ${currentPage}...`);
+        }
+      }
+
+      if (!hasContent) {
+        throw new Error('No valid captures found to export');
+      }
+
+      // Save with a unique filename including timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `${space.name}_${timestamp}.pdf`;
+      pdf.save(filename);
+      showNotification('success', `PDF exported successfully as "${filename}"!`);
     } catch (error) {
-      showNotification(`Error exporting PDF: ${error.message}`, 'error');
-      console.error("Export Error:", error);
+      console.error('Error exporting PDF:', error);
+      showNotification('error', `Export Error: ${error.message}`);
     }
   };
 
-  const layoutCapturesOnPdfPage = async (pdf, captures, pageWidth, pageHeight, margin) => {
-    const availableHeight = pageHeight - (margin * 2);
-    const captureHeight = availableHeight / captures.length;
+  const layoutCapturesOnPdfPage = async (pdf, captures) => {
+    if (!Array.isArray(captures) || captures.length === 0) {
+      console.warn('No captures to layout on page');
+      return false;
+    }
+
+    const pageWidth = pdf.internal.pageSize.width;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 10; // mm
+    const pxToMm = 0.264583333; // conversion factor from pixels to mm (96 DPI)
     
-    for (let i = 0; i < captures.length; i++) {
-      const capture = captures[i];
+    let hasValidCaptures = false;
+
+    for (const capture of captures) {
+      if (!capture.imageData) continue;
+
       const img = new Image();
       img.src = capture.imageData;
-      await new Promise(resolve => { img.onload = resolve });
       
-      const y = margin + (i * captureHeight);
-      const availableWidth = pageWidth - (margin * 2);
-      
-      pdf.addImage(capture.imageData, 'PNG', margin, y, availableWidth, captureHeight - 5);
+      try {
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          setTimeout(reject, 5000);
+        });
+
+        // Get capture properties with defaults
+        const position = capture.position || { x: margin, y: margin };
+        const scale = capture.scale || { x: 1, y: 1 };
+        const rotation = capture.rotation || 0;
+
+        // Calculate scaled dimensions
+        const aspectRatio = img.width / img.height;
+        let width = (pageWidth * 0.3) * scale.x; // Default to 30% of page width
+        let height = width / aspectRatio * scale.y;
+
+        // Ensure capture stays within page bounds
+        width = Math.min(width, pageWidth - (margin * 2));
+        height = Math.min(height, pageHeight - (margin * 2));
+
+        // Calculate positions in mm, converting from pixels
+        const x = margin + (position.x * pxToMm);
+        const y = margin + (position.y * pxToMm);
+
+        // Instead of using translate and rotate, we'll use a different approach
+        if (rotation === 0) {
+          // Simple case - no rotation
+          pdf.addImage(
+            capture.imageData,
+            'PNG',
+            x,
+            y,
+            width,
+            height,
+            undefined,
+            'FAST'
+          );
+        } else {
+          // For rotated images, create a temporary canvas to handle rotation
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Set canvas size to accommodate rotated image
+          const rotatedSize = Math.ceil(Math.sqrt(width * width + height * height));
+          canvas.width = rotatedSize;
+          canvas.height = rotatedSize;
+          
+          // Move to center, rotate, draw image
+          ctx.translate(rotatedSize / 2, rotatedSize / 2);
+          ctx.rotate((rotation * Math.PI) / 180);
+          ctx.drawImage(img, -width/2, -height/2, width, height);
+          
+          // Add the rotated image to PDF
+          pdf.addImage(
+            canvas.toDataURL('image/png'),
+            'PNG',
+            x,
+            y,
+            rotatedSize,
+            rotatedSize,
+            undefined,
+            'FAST'
+          );
+        }
+
+        hasValidCaptures = true;
+      } catch (err) {
+        console.error('Error processing capture for PDF:', err);
+        continue;
+      }
     }
+
+    return hasValidCaptures;
   };
 
   const clearAll = async () => {
@@ -317,23 +419,34 @@ function App() {
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
-          const updatedPages = space.pages.map(page => {
-            if (page.id === pageId) {
-              // Remove duplicates based on capture ID
-              const uniqueCaptures = newCaptures.filter((capture, index, self) => 
-                index === self.findIndex(c => c.id === capture.id)
-              );
-              return { ...page, captures: uniqueCaptures };
-            } else {
-              // Remove any captures that now exist in the target page
-              const newCaptureIds = newCaptures.map(c => c.id);
-              return {
-                ...page,
-                captures: page.captures.filter(c => !newCaptureIds.includes(c.id))
-              };
-            }
-          });
-          return { ...space, pages: updatedPages };
+          if (pageId) {
+            // Single page update
+            const updatedPages = space.pages.map(page => {
+              if (page.id === pageId) {
+                // Remove duplicates based on capture ID and preserve transformations
+                const uniqueCaptures = newCaptures.filter((capture, index, self) => 
+                  index === self.findIndex(c => c.id === capture.id)
+                ).map(capture => ({
+                  ...capture,
+                  position: capture.position || { x: 0, y: 0 },
+                  scale: capture.scale || { x: 1, y: 1 },
+                  rotation: capture.rotation || 0
+                }));
+                return { ...page, captures: uniqueCaptures };
+              } else {
+                // Remove any captures that now exist in the target page
+                const newCaptureIds = newCaptures.map(c => c.id);
+                return {
+                  ...page,
+                  captures: page.captures.filter(c => !newCaptureIds.includes(c.id))
+                };
+              }
+            });
+            return { ...space, pages: updatedPages };
+          } else {
+            // Full space pages update
+            return { ...space, pages: newCaptures };
+          }
         }
         return space;
       })

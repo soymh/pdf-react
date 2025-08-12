@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
+import { createPortal } from 'react-dom';
+import PageEditor from './PageEditor';
 
 function SpaceItem({ 
   space, 
@@ -17,6 +19,7 @@ function SpaceItem({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoomedCapture, setZoomedCapture] = useState(null);
+  const [editingPage, setEditingPage] = useState(null);
 
   const handleSortEnd = (evt) => {
     const { from, to, newIndex, item } = evt;
@@ -71,6 +74,14 @@ function SpaceItem({
             >
               {isActive ? '★' : '☆'}
             </button>
+            <button 
+              className="space-btn" 
+              onClick={() => setEditingPage(space)} 
+              title="Edit Pages Layout"
+              style={{ background: 'rgba(147, 51, 234, 0.3)' }}
+            >
+              ✎
+            </button>
             <button className="space-btn" onClick={() => onExport(space.id)} title="Export as PDF">PDF</button>
             <button className="space-btn" onClick={() => onDelete(space.id)} title="Delete Space">✕</button>
           </div>
@@ -88,6 +99,14 @@ function SpaceItem({
                   <div className="page-header">
                     <span className="page-title">Page {pageIndex + 1} ({page.captures.length})</span>
                     <div className="space-actions">
+                      <button 
+                        className="space-btn" 
+                        onClick={() => setEditingPage(page)}
+                        title="Edit Page Layout"
+                        style={{ background: 'rgba(147, 51, 234, 0.3)' }}
+                      >
+                        ✎
+                      </button>
                       {space.pages.length > 1 && (
                         <button 
                           className="space-btn" 
@@ -185,6 +204,53 @@ function SpaceItem({
             From: {zoomedCapture.source} | Page: {zoomedCapture.page} | Click outside to close
           </div>
         </div>
+      )}
+
+      <button 
+        className="space-btn" 
+        onClick={() => setEditingPage(space)}
+        title="Edit Pages Layout"
+        style={{ background: 'rgba(147, 51, 234, 0.3)' }}
+      >
+        ✎
+      </button>
+      
+      {/* Full Screen Editor Portal */}
+      {editingPage && createPortal(
+        <div className="editor-overlay">
+          <div className="editor-backdrop" />
+          <div className="editor-container">
+            <div className="editor-header">
+              <h2>Editing Pages: {space.name}</h2>
+              <div className="editor-actions">
+                <button 
+                  className="editor-btn cancel" 
+                  onClick={() => setEditingPage(null)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="editor-btn save"
+                  onClick={() => {
+                    onUpdateCaptures(space.id, null, editingPage.pages);
+                    setEditingPage(null);
+                  }}
+                >
+                  Save Layout
+                </button>
+              </div>
+            </div>
+            <PageEditor
+              space={space}
+              onClose={() => setEditingPage(null)}
+              onSave={(updatedPages) => {
+                onUpdateCaptures(space.id, null, updatedPages);
+                setEditingPage(null);
+              }}
+            />
+          </div>
+        </div>,
+        document.body // Render directly in the body, outside of any containers
       )}
     </>
   );
