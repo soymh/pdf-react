@@ -5,23 +5,42 @@ function PageEditor({ space, onClose, onSave }) {
   // A4 dimensions and scaling constants
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
-  const MM_TO_PX = 3.78; // 1mm = 3.78px at 96 DPI
+  const MM_TO_PX = 2.835; // 1mm = 72/25.4 pixels (72 DPI is standard for PDF)
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [pages, setPages] = useState(space.pages.map(page => ({
     ...page,
     captures: page.captures.map(capture => {
-      // Initialize capture with centered position if none exists
+      // Calculate A4 center point
+      const A4CenterX = (A4_WIDTH_MM * MM_TO_PX) / 2;
+      const A4CenterY = (A4_HEIGHT_MM * MM_TO_PX) / 2;
+
+      // Get the original size in pixels
+      const originalSizeInPixels = capture.originalSize || { width: 200, height: 200 };
+      
+      // Calculate a default centered position if none exists
       const defaultPosition = {
-        x: (A4_WIDTH_MM * MM_TO_PX) / 2 - 100,
-        y: (A4_HEIGHT_MM * MM_TO_PX) / 2 - 100
+        x: A4CenterX - (originalSizeInPixels.width / 2),
+        y: A4CenterY - (originalSizeInPixels.height / 2)
+      };
+
+      // Use existing position or default
+      const position = capture.position ? {
+        x: capture.position.x,
+        y: capture.position.y
+      } : defaultPosition;
+
+      // Calculate initial scale based on A4 size if not provided
+      const defaultScale = capture.scale || {
+        x: 1,
+        y: 1
       };
 
       return {
         ...capture,
-        position: capture.position || defaultPosition,
-        scale: capture.scale || { x: 1, y: 1 },
+        position: position,
+        scale: defaultScale,
         rotation: capture.rotation || 0,
-        originalSize: capture.originalSize || { width: 200, height: 200 } // Store original size
+        originalSize: originalSizeInPixels
       };
     })
   })));
@@ -65,13 +84,19 @@ function PageEditor({ space, onClose, onSave }) {
     e.stopPropagation();
     setIsResizing(true);
     setSelectedCapture(captureId);
+    
+    const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
+    const rect = e.currentTarget.parentElement.getBoundingClientRect();
+    
     setDragStart({
       x: e.clientX,
       y: e.clientY,
-      handle
+      handle,
+      initialWidth: rect.width,
+      initialHeight: rect.height,
+      aspectRatio: rect.width / rect.height
     });
     
-    const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
     setInitialTransform({
       scale: { ...capture.scale },
       position: { ...capture.position }
@@ -131,7 +156,6 @@ function PageEditor({ space, onClose, onSave }) {
     if (isResizing) {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
-      const scaleMultiplier = 0.005;
       
       setPages(prev => prev.map((page, index) => {
         if (index === currentPageIndex) {
@@ -139,18 +163,48 @@ function PageEditor({ space, onClose, onSave }) {
             ...page,
             captures: page.captures.map(capture => {
               if (capture.id === selectedCapture) {
-                const newScale = {
-                  x: initialTransform.scale.x + deltaX * scaleMultiplier,
-                  y: initialTransform.scale.y + deltaY * scaleMultiplier
-                };
+                let newScale = { ...initialTransform.scale };
+                const { handle, initialWidth, initialHeight } = dragStart;
+                
+                // Calculate size changes based on handle position
+                switch(handle) {
+                  case 'se':
+                    newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
+                    newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                    break;
+                  case 'sw':
+                    newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
+                    newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                    break;
+                  case 'ne':
+                    newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
+                    newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                    break;
+                  case 'nw':
+                    newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
+                    newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                    break;
+                }
                 
                 // Ensure minimum scale
                 newScale.x = Math.max(0.1, newScale.x);
                 newScale.y = Math.max(0.1, newScale.y);
                 
+                // Update position to maintain the anchor point
+                let positionDelta = { x: 0, y: 0 };
+                const widthDiff = (initialWidth * newScale.x) - (initialWidth * initialTransform.scale.x);
+                const heightDiff = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
+                
+                if (handle.includes('w')) positionDelta.x = widthDiff;
+                if (handle.includes('n')) positionDelta.y = heightDiff;
+                
                 return {
                   ...capture,
-                  scale: newScale
+                  scale: newScale,
+                  position: {
+                    x: initialTransform.position.x - positionDelta.x,
+                    y: initialTransform.position.y - positionDelta.y
+                  }
                 };
               }
               return capture;
@@ -267,21 +321,38 @@ function PageEditor({ space, onClose, onSave }) {
   }, []);
 
   const handleSave = () => {
-    // Convert positions and sizes back to A4 scale for saving
+    // Get the canvas dimensions for centering
+    const canvas = document.querySelector('.page-editor-canvas');
+    const canvasScale = parseFloat(canvas.dataset.scale);
+    const canvasRect = canvas.getBoundingClientRect();
+    
+    // Calculate the center of the A4 page
+    const A4CenterX = (A4_WIDTH_MM * MM_TO_PX) / 2;
+    const A4CenterY = (A4_HEIGHT_MM * MM_TO_PX) / 2;
+    
+    // Save with proper scaling and centered positioning
     const scaledPages = pages.map(page => ({
       ...page,
       captures: page.captures.map(capture => {
-        const canvasScale = parseFloat(document.querySelector('.page-editor-canvas').dataset.scale);
+        // Calculate position relative to A4 center in real pixels
+        const relativeX = capture.position.x - (canvasRect.width / 2);
+        const relativeY = capture.position.y - (canvasRect.height / 2);
+        
+        // Convert to unscaled A4 coordinates
+        const unscaledX = (relativeX / canvasScale) + A4CenterX;
+        const unscaledY = (relativeY / canvasScale) + A4CenterY;
+        
         return {
           ...capture,
           position: {
-            x: capture.position.x / canvasScale,
-            y: capture.position.y / canvasScale
+            x: unscaledX,
+            y: unscaledY
           },
-          scale: {
-            x: capture.scale.x,
-            y: capture.scale.y
+          dimensions: {
+            width: capture.originalSize.width * capture.scale.x,
+            height: capture.originalSize.height * capture.scale.y
           },
+          scale: capture.scale,
           rotation: capture.rotation,
           originalSize: capture.originalSize
         };
@@ -295,7 +366,7 @@ function PageEditor({ space, onClose, onSave }) {
       <div className="page-editor">
         <div className="page-editor-header">
           <div className="page-editor-title">
-            <h2>Editing: {space.name}</h2>
+            <span>{space.name}</span>
             <div className="page-navigation">
               <button 
                 className="nav-btn" 
@@ -304,7 +375,7 @@ function PageEditor({ space, onClose, onSave }) {
               >
                 ◀
               </button>
-              <span>Page {currentPageIndex + 1} of {pages.length}</span>
+              <small>Page {currentPageIndex + 1}/{pages.length}</small>
               <button 
                 className="nav-btn" 
                 onClick={nextPage} 

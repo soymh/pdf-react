@@ -194,35 +194,41 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 30px;
+  padding: 10px 20px;
   background: linear-gradient(90deg, rgba(22, 24, 36, 0.98) 0%, rgba(32, 34, 48, 0.98) 100%);
   border-bottom: 2px solid rgba(147, 51, 234, 0.3);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1001;
+  height: 50px;
 }
 
 .page-editor-title {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
   color: #fff;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: bold;
 }
 
 .page-navigation {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-left: 30px;
-  padding: 8px 20px;
+  gap: 10px;
+  margin-left: 15px;
+  padding: 4px 12px;
   background: linear-gradient(90deg, rgba(147, 51, 234, 0.1), rgba(147, 51, 234, 0.05));
   border: 1px solid rgba(147, 51, 234, 0.2);
-  border-radius: 20px;
+  border-radius: 15px;
   box-shadow: 
     0 0 0 1px rgba(147, 51, 234, 0.1),
     0 4px 10px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
-  animation: glow 2s ease-in-out infinite;
+  font-size: 12px;
 }
 
 @keyframes glow {
@@ -270,13 +276,13 @@
   background: rgba(147, 51, 234, 0.1);
   border: 1px solid rgba(147, 51, 234, 0.3);
   color: #fff;
-  padding: 12px 24px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -317,14 +323,15 @@
 }
 
 .page-editor-content {
-  flex: 1;
   position: relative;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, rgba(13, 14, 22, 0.98) 0%, rgba(20, 22, 33, 0.98) 100%);
-  padding: 40px;
+  padding: 20px;
+  padding-top: 70px; /* Account for fixed header */
+  min-height: 100vh;
   perspective: 1000px;
 }
 
@@ -332,8 +339,8 @@
   position: relative;
   background: #fff;
   /* A4 aspect ratio (210mm x 297mm = 1:1.4142) */
-  height: calc(100vh - 160px);
-  width: calc((100vh - 160px) / 1.4142);
+  height: calc(100vh - 90px); /* Reduced padding */
+  width: calc((100vh - 90px) / 1.4142);
   box-shadow: 
     0 0 0 1px rgba(147, 51, 234, 0.2),
     0 0 0 2px rgba(147, 51, 234, 0.1),
