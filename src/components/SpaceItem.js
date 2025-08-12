@@ -11,19 +11,31 @@ function SpaceItem({
   onCaptureMove,
   onAddNewPage, 
   onDeletePage, 
+  onMoveCapturesBetweenPages,
   isDragging, 
   setIsDragging 
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoomedCapture, setZoomedCapture] = useState(null);
 
+  const handleSortEnd = (evt) => {
+    const { from, to, newIndex, item } = evt;
+    const fromPageId = from.dataset.pageId;
+    const toPageId = to.dataset.pageId;
+    const captureId = item.dataset.id;
+
+    if (fromPageId !== toPageId && captureId) {
+      onMoveCapturesBetweenPages(space.id, captureId, fromPageId, toPageId, newIndex);
+    }
+    
+    if (setIsDragging) setIsDragging(false);
+  };
+
   const handleCaptureAdd = (newCaptures, pageId, sortable, evt) => {
-    // Prevent the workspace reload by stopping event propagation
     if (evt && evt.originalEvent) {
       evt.originalEvent.stopPropagation();
     }
-    
-    // Simply update the captures for this page
+
     onUpdateCaptures(space.id, pageId, newCaptures);
   };
 
@@ -89,7 +101,7 @@ function SpaceItem({
                     </div>
                   </div>
                   
-                  <div className="capture-grid">
+                  <div className="capture-grid" data-page-id={page.id}>
                     <ReactSortable
                       list={page.captures}
                       setList={(newCaptures) => onUpdateCaptures(space.id, page.id, newCaptures)}
@@ -98,12 +110,12 @@ function SpaceItem({
                       chosenClass="sortable-chosen"
                       group="shared-captures"
                       onStart={() => setIsDragging && setIsDragging(true)}
-                      onEnd={() => setIsDragging && setIsDragging(false)}
+                      onEnd={handleSortEnd}
                       forceFallback={true}
                       fallbackClass="sortable-fallback"
                     >
                       {page.captures.map((capture, index) => (
-                        <div key={`${page.id}-${capture.id}`} className="capture-thumbnail-container">
+                        <div key={`${page.id}-${capture.id}`} className="capture-thumbnail-container" data-id={capture.id}>
                           <img
                             data-id={capture.id}
                             src={capture.imageData}

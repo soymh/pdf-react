@@ -168,14 +168,20 @@ function App() {
             timestamp: new Date().toISOString()
           };
 
-          const updatedPages = space.pages && space.pages.length > 0
-            ? space.pages.map((page, index) =>
-                index === 0
+          let updatedPages = space.pages || [];
+
+          if (updatedPages.length > 0) {
+            // Add the new capture to the last page of the space
+            const lastPageIndex = updatedPages.length - 1;
+            updatedPages = updatedPages.map((page, index) =>
+              index === lastPageIndex
                   ? { ...page, captures: [...page.captures, newCapture] }
                   : page
-              )
-            : [{ id: Date.now(), captures: [newCapture] }];
-            
+            );
+            } else {
+            // If no pages exist, create the first page and add the capture
+            updatedPages = [{ id: Date.now(), captures: [newCapture] }];
+          }
           return { ...space, pages: updatedPages };
         }
         return space;

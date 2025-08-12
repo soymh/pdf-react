@@ -9,9 +9,9 @@ function SpacesPanel({
   onDeleteSpace, 
   onExportSpace, 
   onUpdateCaptures,
-  onCaptureMove, // Add this prop
   onAddNewPage,
-  onDeletePage 
+  onDeletePage,
+  onMoveCapturesBetweenPages // Add this new prop
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -84,9 +84,9 @@ function SpacesPanel({
               onDelete={onDeleteSpace}
               onExport={onExportSpace}
               onUpdateCaptures={onUpdateCaptures}
-              // REMOVE THIS LINE: onCaptureMove={onCaptureMove}
               onAddNewPage={onAddNewPage}
               onDeletePage={onDeletePage}
+              onMoveCapturesBetweenPages={onMoveCapturesBetweenPages} // Pass the new prop
               isDragging={isDragging}
               setIsDragging={setIsDragging}
             />
