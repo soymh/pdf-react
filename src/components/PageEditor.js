@@ -293,16 +293,16 @@ function PageEditor({ space, onClose, onSave }) {
       if (canvas) {
         const vh = window.innerHeight;
         const vw = window.innerWidth;
-        const padding = 160; // Header + toolbar + margins
+        const padding = 200; // Increased padding for better zoom-out
         
         // Calculate A4 size in pixels
         let width = A4_WIDTH_MM * MM_TO_PX;
         let height = A4_HEIGHT_MM * MM_TO_PX;
         
-        // Scale to fit screen while maintaining aspect ratio
+        // Scale to fit screen while maintaining aspect ratio (more zoomed out)
         const scaleW = (vw - padding) / width;
         const scaleH = (vh - padding) / height;
-        const scale = Math.min(scaleW, scaleH, 1); // Never scale up
+        const scale = Math.min(scaleW, scaleH, 0.8); // Reduced max scale for zoom-out
         
         width *= scale;
         height *= scale;
@@ -321,32 +321,15 @@ function PageEditor({ space, onClose, onSave }) {
   }, []);
 
   const handleSave = () => {
-    // Get the canvas dimensions for centering
-    const canvas = document.querySelector('.page-editor-canvas');
-    const canvasScale = parseFloat(canvas.dataset.scale);
-    const canvasRect = canvas.getBoundingClientRect();
-    
-    // Calculate the center of the A4 page
-    const A4CenterX = (A4_WIDTH_MM * MM_TO_PX) / 2;
-    const A4CenterY = (A4_HEIGHT_MM * MM_TO_PX) / 2;
-    
-    // Save with proper scaling and centered positioning
+    // Convert editor coordinates to A4-relative coordinates for App.js compatibility
     const scaledPages = pages.map(page => ({
       ...page,
       captures: page.captures.map(capture => {
-        // Calculate position relative to A4 center in real pixels
-        const relativeX = capture.position.x - (canvasRect.width / 2);
-        const relativeY = capture.position.y - (canvasRect.height / 2);
-        
-        // Convert to unscaled A4 coordinates
-        const unscaledX = (relativeX / canvasScale) + A4CenterX;
-        const unscaledY = (relativeY / canvasScale) + A4CenterY;
-        
         return {
           ...capture,
           position: {
-            x: unscaledX,
-            y: unscaledY
+            x: capture.position.x,
+            y: capture.position.y
           },
           dimensions: {
             width: capture.originalSize.width * capture.scale.x,
@@ -387,7 +370,7 @@ function PageEditor({ space, onClose, onSave }) {
           </div>
           <div className="page-editor-actions">
             <button className="page-editor-btn cancel" onClick={onClose}>Exit</button>
-            <button className="page-editor-btn save" onClick={handleSave}>Save Changes</button>
+            <button className="page-editor-btn save-minimal" onClick={handleSave}>Save Changes</button>
           </div>
         </div>
         

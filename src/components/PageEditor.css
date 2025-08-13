@@ -311,15 +311,25 @@
   transform: translateX(100%);
 }
 
-.page-editor-btn.save {
-  background: rgba(147, 51, 234, 0.8);
-  border-color: rgba(147, 51, 234, 0.9);
+/* Clean minimal save button */
+.page-editor-btn.save-minimal {
+  background: rgba(147, 51, 234, 0.15);
+  border: 1px solid rgba(147, 51, 234, 0.4);
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
 }
 
-.page-editor-btn.save:hover {
-  background: rgba(147, 51, 234, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 25px rgba(147, 51, 234, 0.4);
+.page-editor-btn.save-minimal:hover {
+  background: rgba(147, 51, 234, 0.25);
+  border-color: rgba(147, 51, 234, 0.6);
+  transform: none;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.2);
 }
 
 .page-editor-content {
@@ -328,28 +338,29 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, rgba(13, 14, 22, 0.98) 0%, rgba(20, 22, 33, 0.98) 100%);
-  padding: 20px;
-  padding-top: 70px; /* Account for fixed header */
+  background: linear-gradient(135deg, rgba(13, 14, 22, 0.95) 0%, rgba(20, 22, 33, 0.95) 100%);
+  padding: 40px 20px; /* Increased padding for better spacing */
+  padding-top: 90px; /* Account for fixed header */
   min-height: 100vh;
   perspective: 1000px;
 }
 
+/* More zoomed out canvas with cleaner appearance */
 .page-editor-canvas {
   position: relative;
   background: #fff;
-  /* A4 aspect ratio (210mm x 297mm = 1:1.4142) */
-  height: calc(100vh - 90px); /* Reduced padding */
-  width: calc((100vh - 90px) / 1.4142);
+  /* A4 aspect ratio */
+  max-height: calc(100vh - 200px); /* More conservative height */
+  width: auto;
   box-shadow: 
-    0 0 0 1px rgba(147, 51, 234, 0.2),
-    0 0 0 2px rgba(147, 51, 234, 0.1),
-    0 0 30px rgba(147, 51, 234, 0.1),
-    0 0 50px rgba(0, 0, 0, 0.3);
+    0 0 0 1px rgba(147, 51, 234, 0.15),
+    0 0 20px rgba(147, 51, 234, 0.08),
+    0 0 40px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   transform: translateZ(0);
-  border-radius: 4px;
-  animation: canvasFloat 3s ease-in-out infinite;
+  border-radius: 2px;
+  /* Remove floating animation for cleaner look */
+  animation: none;
 }
 
 @keyframes canvasFloat {
@@ -450,24 +461,25 @@
   transform: translateX(-50%) scale(1.2);
 }
 
+/* Cleaner toolbar */
 .page-editor-toolbar {
   position: fixed;
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 15px;
-  background: rgba(22, 24, 36, 0.95);
-  padding: 15px 25px;
-  border-radius: 20px;
+  gap: 12px;
+  background: rgba(22, 24, 36, 0.90);
+  padding: 12px 20px;
+  border-radius: 12px;
   z-index: 1000;
-  border: 1px solid rgba(147, 51, 234, 0.3);
+  border: 1px solid rgba(147, 51, 234, 0.2);
   box-shadow: 
-    0 0 0 1px rgba(147, 51, 234, 0.1),
-    0 8px 20px rgba(0, 0, 0, 0.3),
-    0 0 40px rgba(147, 51, 234, 0.2);
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(147, 51, 234, 0.1);
   backdrop-filter: blur(10px);
-  animation: toolbarFloat 3s ease-in-out infinite;
+  /* Remove floating animation */
+  animation: none;
 }
 
 @keyframes toolbarFloat {
@@ -480,18 +492,18 @@
 }
 
 .toolbar-btn {
-  background: rgba(147, 51, 234, 0.1);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  background: rgba(147, 51, 234, 0.08);
+  border: 1px solid rgba(147, 51, 234, 0.15);
   color: #fff;
-  width: 45px;
-  height: 45px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 18px;
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
 }
@@ -509,11 +521,9 @@
 }
 
 .toolbar-btn:hover {
-  background: rgba(147, 51, 234, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 
-    0 4px 15px rgba(147, 51, 234, 0.2),
-    0 0 0 1px rgba(147, 51, 234, 0.3);
+  background: rgba(147, 51, 234, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
 }
 
 .toolbar-btn:hover::after {

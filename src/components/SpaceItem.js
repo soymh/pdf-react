@@ -219,38 +219,16 @@ function SpaceItem({
       {editingPage && createPortal(
         <div className="editor-overlay">
           <div className="editor-backdrop" />
-          <div className="editor-container">
-            <div className="editor-header">
-              <h2>Editing Pages: {space.name}</h2>
-              <div className="editor-actions">
-                <button 
-                  className="editor-btn cancel" 
-                  onClick={() => setEditingPage(null)}
-                >
-                  Cancel
-                </button>
-                <button 
-                  className="editor-btn save"
-                  onClick={() => {
-                    onUpdateCaptures(space.id, null, editingPage.pages);
-                    setEditingPage(null);
-                  }}
-                >
-                  Save Layout
-                </button>
-              </div>
-            </div>
-            <PageEditor
-              space={space}
-              onClose={() => setEditingPage(null)}
-              onSave={(updatedPages) => {
-                onUpdateCaptures(space.id, null, updatedPages);
-                setEditingPage(null);
-              }}
-            />
-          </div>
+          <PageEditor
+            space={space}
+            onClose={() => setEditingPage(null)}
+            onSave={(updatedPages) => {
+              onUpdateCaptures(space.id, null, updatedPages);
+              setEditingPage(null);
+            }}
+          />
         </div>,
-        document.body // Render directly in the body, outside of any containers
+        document.body
       )}
     </>
   );

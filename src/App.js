@@ -287,10 +287,9 @@ function App() {
       return false;
     }
 
-    const pageWidth = pdf.internal.pageSize.width;
-    const pageHeight = pdf.internal.pageSize.height;
-    const margin = 10; // mm
-    const pxToMm = 0.264583333; // conversion factor from pixels to mm (96 DPI)
+    const pageWidth = pdf.internal.pageSize.width; // ~210mm for A4
+    const pageHeight = pdf.internal.pageSize.height; // ~297mm for A4
+    const MM_TO_PX = 2.835; // Pixels to mm conversion
     
     let hasValidCaptures = false;
 
@@ -308,62 +307,71 @@ function App() {
         });
 
         // Get capture properties with defaults
-        const position = capture.position || { x: margin, y: margin };
+        const position = capture.position || { x: 0, y: 0 };
         const scale = capture.scale || { x: 1, y: 1 };
         const rotation = capture.rotation || 0;
+        const originalSize = capture.originalSize || { width: img.width, height: img.height };
 
-        // Calculate scaled dimensions
-        const aspectRatio = img.width / img.height;
-        let width = (pageWidth * 0.3) * scale.x; // Default to 30% of page width
-        let height = width / aspectRatio * scale.y;
+        // Convert pixel coordinates to mm coordinates for PDF
+        const xMm = position.x / MM_TO_PX;
+        const yMm = position.y / MM_TO_PX;
+        
+        // Calculate scaled dimensions in mm
+        const widthMm = (originalSize.width * scale.x) / MM_TO_PX;
+        const heightMm = (originalSize.height * scale.y) / MM_TO_PX;
 
         // Ensure capture stays within page bounds
-        width = Math.min(width, pageWidth - (margin * 2));
-        height = Math.min(height, pageHeight - (margin * 2));
+        const finalWidth = Math.min(widthMm, pageWidth - 10); // 10mm margin
+        const finalHeight = Math.min(heightMm, pageHeight - 10);
+        
+        // Center the coordinates properly
+        const finalX = Math.max(5, Math.min(xMm, pageWidth - finalWidth - 5));
+        const finalY = Math.max(5, Math.min(yMm, pageHeight - finalHeight - 5));
 
-        // Calculate positions in mm, converting from pixels
-        const x = margin + (position.x * pxToMm);
-        const y = margin + (position.y * pxToMm);
-
-        // Instead of using translate and rotate, we'll use a different approach
         if (rotation === 0) {
           // Simple case - no rotation
           pdf.addImage(
             capture.imageData,
             'PNG',
-            x,
-            y,
-            width,
-            height,
+            finalX,
+            finalY,
+            finalWidth,
+            finalHeight,
             undefined,
             'FAST'
           );
         } else {
-          // For rotated images, create a temporary canvas to handle rotation
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+          // For rotated images, use PDF's built-in rotation
+          pdf.saveGraphicsState();
           
-          // Set canvas size to accommodate rotated image
-          const rotatedSize = Math.ceil(Math.sqrt(width * width + height * height));
-          canvas.width = rotatedSize;
-          canvas.height = rotatedSize;
+          // Move to the center of where we want to place the image
+          const centerX = finalX + finalWidth / 2;
+          const centerY = finalY + finalHeight / 2;
           
-          // Move to center, rotate, draw image
-          ctx.translate(rotatedSize / 2, rotatedSize / 2);
-          ctx.rotate((rotation * Math.PI) / 180);
-          ctx.drawImage(img, -width/2, -height/2, width, height);
+          // Apply rotation around the center point
+          pdf.setGState(new pdf.GState({
+            transformation: [
+              Math.cos(rotation * Math.PI / 180), 
+              Math.sin(rotation * Math.PI / 180),
+              -Math.sin(rotation * Math.PI / 180), 
+              Math.cos(rotation * Math.PI / 180),
+              centerX - centerX * Math.cos(rotation * Math.PI / 180) + centerY * Math.sin(rotation * Math.PI / 180),
+              centerY - centerX * Math.sin(rotation * Math.PI / 180) - centerY * Math.cos(rotation * Math.PI / 180)
+            ]
+          }));
           
-          // Add the rotated image to PDF
           pdf.addImage(
-            canvas.toDataURL('image/png'),
+            capture.imageData,
             'PNG',
-            x,
-            y,
-            rotatedSize,
-            rotatedSize,
+            finalX,
+            finalY,
+            finalWidth,
+            finalHeight,
             undefined,
             'FAST'
           );
+          
+          pdf.restoreGraphicsState();
         }
 
         hasValidCaptures = true;
