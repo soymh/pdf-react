@@ -222,8 +222,8 @@ function SpaceItem({
           <PageEditor
             space={space}
             onClose={() => setEditingPage(null)}
-            onSave={(updatedPages) => {
-              onUpdateCaptures(space.id, null, updatedPages);
+            onSave={(updatedPage) => {
+              onUpdateCaptures(space.id, updatedPage);
               setEditingPage(null);
             }}
           />

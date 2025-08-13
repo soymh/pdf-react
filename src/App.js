@@ -242,8 +242,8 @@ function App() {
 
       // Process each page in sequence
       for (const page of pagesWithCaptures) {
-        // Skip pages with no captures
-        if (!Array.isArray(page.captures) || page.captures.length === 0) {
+        if (!page.renderedImage) {
+          console.warn(`Page ${page.id} has no rendered image. Skipping.`);
           continue;
         }
 
@@ -252,22 +252,49 @@ function App() {
           pdf.addPage();
         }
 
-        // Sort captures by z-index if specified
-        const sortedCaptures = [...page.captures].sort((a, b) => 
-          (a.zIndex || 0) - (b.zIndex || 0)
-        );
+      const img = new Image();
+        img.src = page.renderedImage;
+      
+      try {
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+            setTimeout(reject, 10000); // Increased timeout for large images
+        });
 
-        // Layout the captures with their transformations
-        const pageHasContent = await layoutCapturesOnPdfPage(pdf, sortedCaptures);
-        if (pageHasContent) {
+          // Calculate dimensions to fit A4 page with a small margin
+          const imgWidth = img.naturalWidth;
+          const imgHeight = img.naturalHeight;
+
+          const ratio = Math.min(pdf.internal.pageSize.width / imgWidth, pdf.internal.pageSize.height / imgHeight);
+
+          const finalWidth = imgWidth * ratio;
+          const finalHeight = imgHeight * ratio;
+
+          const x = (pdf.internal.pageSize.width - finalWidth) / 2;
+          const y = (pdf.internal.pageSize.height - finalHeight) / 2;
+          pdf.addImage(
+            page.renderedImage,
+            'PNG',
+            x,
+            y,
+            finalWidth,
+            finalHeight,
+            undefined,
+            'FAST'
+          );
           hasContent = true;
           currentPage++;
           showNotification('info', `Processing page ${currentPage}...`);
-        }
+        } catch (err) {
+          console.error('Error adding rendered image to PDF:', err);
+          showNotification('error', `Failed to add page image: ${err.message}`, 'error');
+        continue;
       }
+    }
 
       if (!hasContent) {
-        throw new Error('No valid captures found to export');
+        throw new Error('No valid content found to export after processing rendered images.');
       }
 
       // Save with a unique filename including timestamp
@@ -282,106 +309,11 @@ function App() {
   };
 
   const layoutCapturesOnPdfPage = async (pdf, captures) => {
-    if (!Array.isArray(captures) || captures.length === 0) {
-      console.warn('No captures to layout on page');
-      return false;
-    }
-
-    const pageWidth = pdf.internal.pageSize.width; // ~210mm for A4
-    const pageHeight = pdf.internal.pageSize.height; // ~297mm for A4
-    const PX_TO_MM = 96/25.4*0.36; // Pixels to mm conversion
-    
-    let hasValidCaptures = false;
-
-    for (const capture of captures) {
-      if (!capture.imageData) continue;
-
-      const img = new Image();
-      img.src = capture.imageData;
-      
-      try {
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-          setTimeout(reject, 5000);
-        });
-
-        // Get capture properties with defaults
-        const position = capture.position || { x: 0, y: 0 };
-        const scale = capture.scale || { x: 1, y: 1 };
-        const rotation = capture.rotation || 0;
-        const originalSize = capture.originalSize || { width: img.width, height: img.height };
-
-        // Convert pixel coordinates to mm coordinates for PDF
-        const xMm = position.x / PX_TO_MM;
-        const yMm = position.y / PX_TO_MM;
-        
-        // Calculate scaled dimensions in mm
-        const widthMm = (originalSize.width * scale.x) / PX_TO_MM;
-        const heightMm = (originalSize.height * scale.y) / PX_TO_MM;
-
-        // Ensure capture stays within page bounds
-        const finalWidth = Math.min(widthMm, pageWidth - 10); // 10mm margin
-        const finalHeight = Math.min(heightMm, pageHeight - 10);
-        
-        // Center the coordinates properly
-        const finalX = Math.max(5, Math.min(xMm, pageWidth - finalWidth - 5));
-        const finalY = Math.max(5, Math.min(yMm, pageHeight - finalHeight - 5));
-
-        if (rotation === 0) {
-          // Simple case - no rotation
-          pdf.addImage(
-            capture.imageData,
-            'PNG',
-            finalX,
-            finalY,
-            finalWidth,
-            finalHeight,
-            undefined,
-            'FAST'
-          );
-        } else {
-          // For rotated images, use PDF's built-in rotation
-          pdf.saveGraphicsState();
-          
-          // Move to the center of where we want to place the image
-          const centerX = finalX + finalWidth / 2;
-          const centerY = finalY + finalHeight / 2;
-          
-          // Apply rotation around the center point
-          pdf.setGState(new pdf.GState({
-            transformation: [
-              Math.cos(rotation * Math.PI / 180), 
-              Math.sin(rotation * Math.PI / 180),
-              -Math.sin(rotation * Math.PI / 180), 
-              Math.cos(rotation * Math.PI / 180),
-              centerX - centerX * Math.cos(rotation * Math.PI / 180) + centerY * Math.sin(rotation * Math.PI / 180),
-              centerY - centerX * Math.sin(rotation * Math.PI / 180) - centerY * Math.cos(rotation * Math.PI / 180)
-            ]
-          }));
-          
-          pdf.addImage(
-            capture.imageData,
-            'PNG',
-            finalX,
-            finalY,
-            finalWidth,
-            finalHeight,
-            undefined,
-            'FAST'
-          );
-          
-          pdf.restoreGraphicsState();
-        }
-
-        hasValidCaptures = true;
-      } catch (err) {
-        console.error('Error processing capture for PDF:', err);
-        continue;
-      }
-    }
-
-    return hasValidCaptures;
+    // This function is no longer needed if we're using pre-rendered images
+    // However, keeping it for now in case there's other logic that relies on it.
+    // It will not be called for pages with renderedImage.
+    console.warn('layoutCapturesOnPdfPage was called, but should be superseded by renderedImage.');
+    return false;
   };
 
   const clearAll = async () => {
@@ -422,39 +354,19 @@ function App() {
     showNotification('Page deleted!', 'success');
   };
 
-  const updatePageCaptures = async (spaceId, pageId, newCaptures) => {
+  const updatePageCaptures = async (spaceId, updatedPage) => {
     await updateWorkspace(w => ({
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
-          if (pageId) {
-            // Single page update
             const updatedPages = space.pages.map(page => {
-              if (page.id === pageId) {
-                // Remove duplicates based on capture ID and preserve transformations
-                const uniqueCaptures = newCaptures.filter((capture, index, self) => 
-                  index === self.findIndex(c => c.id === capture.id)
-                ).map(capture => ({
-                  ...capture,
-                  position: capture.position || { x: 0, y: 0 },
-                  scale: capture.scale || { x: 1, y: 1 },
-                  rotation: capture.rotation || 0
-                }));
-                return { ...page, captures: uniqueCaptures };
-              } else {
-                // Remove any captures that now exist in the target page
-                const newCaptureIds = newCaptures.map(c => c.id);
-                return {
-                  ...page,
-                  captures: page.captures.filter(c => !newCaptureIds.includes(c.id))
-                };
-              }
-            });
-            return { ...space, pages: updatedPages };
-          } else {
-            // Full space pages update
-            return { ...space, pages: newCaptures };
-          }
+            if (page.id === updatedPage.id) {
+              // Replace the existing page with the updated page (including renderedImage)
+              return updatedPage;
+            }
+            return page;
+          });
+          return { ...space, pages: updatedPages };
         }
         return space;
       })

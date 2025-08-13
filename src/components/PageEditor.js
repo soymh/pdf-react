@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import html2canvas from 'html2canvas';
 import './PageEditor.css';
 
 function PageEditor({ space, onClose, onSave }) {
@@ -11,36 +12,20 @@ function PageEditor({ space, onClose, onSave }) {
     ...page,
     captures: page.captures.map(capture => {
       // Calculate A4 center point
-      const A4CenterX = (A4_WIDTH_MM * MM_TO_PX) / 2;
-      const A4CenterY = (A4_HEIGHT_MM * MM_TO_PX) / 2;
+      const A4_WIDTH_PX = A4_WIDTH_MM * MM_TO_PX;
+      const A4_HEIGHT_PX = A4_HEIGHT_MM * MM_TO_PX;
 
-      // Get the original size in pixels
-      const originalSizeInPixels = capture.originalSize || { width: 200, height: 200 };
-      
-      // Calculate a default centered position if none exists
       const defaultPosition = {
-        x: A4CenterX - (originalSizeInPixels.width / 2),
-        y: A4CenterY - (originalSizeInPixels.height / 2)
-      };
-
-      // Use existing position or default
-      const position = capture.position ? {
-        x: capture.position.x,
-        y: capture.position.y
-      } : defaultPosition;
-
-      // Calculate initial scale based on A4 size if not provided
-      const defaultScale = capture.scale || {
-        x: 1,
-        y: 1
+        x: (A4_WIDTH_PX / 2) - ((capture.originalSize?.width || 200) / 2),
+        y: (A4_HEIGHT_PX / 2) - ((capture.originalSize?.height || 200) / 2)
       };
 
       return {
         ...capture,
-        position: position,
-        scale: defaultScale,
+        position: capture.position || defaultPosition,
+        scale: capture.scale || { x: 1, y: 1 },
         rotation: capture.rotation || 0,
-        originalSize: originalSizeInPixels
+        originalSize: capture.originalSize || { width: 200, height: 200 }
       };
     })
   })));
@@ -291,16 +276,13 @@ function PageEditor({ space, onClose, onSave }) {
       if (canvas) {
         const vh = window.innerHeight;
         const vw = window.innerWidth;
-        const padding = 200; // Increased padding for better zoom-out
-        
-        // Calculate A4 size in pixels
+        const padding = 200;
         let width = A4_WIDTH_MM * MM_TO_PX;
         let height = A4_HEIGHT_MM * MM_TO_PX;
         
-        // Scale to fit screen while maintaining aspect ratio (more zoomed out)
         const scaleW = (vw - padding) / width;
         const scaleH = (vh - padding) / height;
-        const scale = Math.min(scaleW, scaleH, 0.8); // Reduced max scale for zoom-out
+        const scale = Math.min(scaleW, scaleH, 0.8);
         
         width *= scale;
         height *= scale;
@@ -313,38 +295,38 @@ function PageEditor({ space, onClose, onSave }) {
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial sizing
-    
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSave = () => {
-    // Convert editor coordinates to A4-relative coordinates for App.js compatibility
-  const A4_WIDTH_PX = A4_WIDTH_MM * MM_TO_PX;
-  const scaleFactor = (canvasDimensions?.width ?? A4_WIDTH_PX) / A4_WIDTH_PX;
+  const handleSave = async () => {
+    setSelectedCapture(null); // Deselect any active capture before saving
+    await new Promise(resolve => setTimeout(resolve, 50)); // Allow re-render
 
-      const scaledPages = pages.map(page => ({
-        ...page,
-        captures: page.captures.map(capture => ({
-          ...capture,
-          // position is currently in screen-px (after canvas zoom).
-          // keep it, but also persist the canvas zoom so export can unscale it.
-          editorScale: scaleFactor,
+    const canvasElement = canvasRef.current;
+    if (canvasElement) {
+      // Temporarily hide scrollbars if they appear due to overflow
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
 
-          position: {
-            x: capture.position.x,
-            y: capture.position.y,
-          },
-          dimensions: {
-            width: capture.originalSize.width * capture.scale.x,
-            height: capture.originalSize.height * capture.scale.y,
-          },
-          scale: capture.scale,
-          rotation: capture.rotation,
-          originalSize: capture.originalSize,
-        }))
-      }));
-    onSave(scaledPages, currentPageIndex);
+      const canvas = await html2canvas(canvasElement, {
+        scale: 2, // Increase scale for higher resolution
+        useCORS: true, // Important for images loaded from different origins
+        logging: true,
+        backgroundColor: '#1a1a1a', // Match editor background or transparent
+      });
+      document.body.style.overflow = originalOverflow; // Restore overflow
+
+      const imageData = canvas.toDataURL('image/png'); // Get image as Data URL
+
+      const updatedPage = {
+        ...pages[currentPageIndex],
+        renderedImage: imageData, // Store the rendered image
+      };
+
+      // Only pass the updated page, not all pages
+      onSave(updatedPage);
+    }
   };
 
   return (
@@ -428,3 +410,4 @@ function PageEditor({ space, onClose, onSave }) {
 }
 
 export default PageEditor;
+
