@@ -231,6 +231,42 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     setIsRotating(false);
   };
 
+  // Handle layer change (bring front/send back)
+  const handleLayerChange = (e, captureId, direction) => {
+        e.stopPropagation();
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        const currentCaptures = [...page.captures];
+        const captureIndex = currentCaptures.findIndex(c => c.id === captureId);
+        if (captureIndex === -1) return page; // Capture not found
+
+        const [captureToMove] = currentCaptures.splice(captureIndex, 1);
+        if (direction === 'front') {
+          currentCaptures.push(captureToMove); // Move to end for 'bring to front'
+        } else if (direction === 'back') {
+          currentCaptures.unshift(captureToMove); // Move to beginning for 'send to back'
+        } else if (direction === 'forward') {
+          // Move one step forward, unless it's already at the front
+          if (captureIndex < currentCaptures.length) {
+            currentCaptures.splice(captureIndex + 1, 0, captureToMove);
+            } else {
+            currentCaptures.push(captureToMove);
+            }
+        } else if (direction === 'backward') {
+          // Move one step backward, unless it's already at the back
+          if (captureIndex > 0) {
+            currentCaptures.splice(captureIndex - 1, 0, captureToMove);
+          } else {
+            currentCaptures.unshift(captureToMove);
+          }
+        }
+
+        return { ...page, captures: currentCaptures };
+      }
+      return page;
+    }));
+    };
+
   // Add/remove global mouse event listeners
   useEffect(() => {
     const handleGlobalMouseMove = (e) => handleMouseMove(e);
@@ -240,7 +276,6 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
     }
-
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
@@ -372,6 +407,33 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     onClose(); // Close after saving all
   };
 
+    const handleLayerChangeOriginal = (e, captureId, action) => {
+        e.stopPropagation();
+
+        setPages(prev => {
+            const newPages = [...prev];
+            const page = { ...newPages[currentPageIndex] };
+            const captures = [...page.captures];
+
+            const captureIndex = captures.findIndex(c => c.id === captureId);
+            if (captureIndex === -1) return prev;
+
+            const capture = captures[captureIndex];
+            captures.splice(captureIndex, 1);
+
+            if (action === 'front') {
+                captures.push(capture);
+            } else {
+                captures.unshift(capture);
+            }
+
+            page.captures = captures;
+            newPages[currentPageIndex] = page;
+
+            return newPages;
+        });
+    };
+
   return (
     <div className="page-editor-modal">
       <div className="page-editor">
@@ -435,6 +497,10 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                       <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
                       <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
                       <div className="rotate-handle" onMouseDown={(e) => handleRotateStart(e, capture.id)}>⟲</div>
+                      <button className="layer-handle bring-front" onClick={(e) => handleLayerChange(e, capture.id, 'front')} title="Bring to Front">⬆</button>
+                      <button className="layer-handle send-back" onClick={(e) => handleLayerChange(e, capture.id, 'back')} title="Send to Back">⬇</button>
+                      <button className="layer-handle bring-forward" onClick={(e) => handleLayerChange(e, capture.id, 'forward')} title="Bring Forward">⇧</button>
+                      <button className="layer-handle send-backward" onClick={(e) => handleLayerChange(e, capture.id, 'backward')} title="Send Backward">⇩</button>
                     </>
                   )}
                 </div>
