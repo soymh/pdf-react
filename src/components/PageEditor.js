@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import './PageEditor.css';
 
-function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
+function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotification }) {
   // A4 dimensions and scaling constants
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
@@ -299,10 +299,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleSave = async () => {
-    setSelectedCapture(null); // Deselect any active capture before saving
-    await new Promise(resolve => setTimeout(resolve, 50)); // Allow re-render
-
+  const captureCanvasContent = async () => {
     const canvasElement = canvasRef.current;
     if (canvasElement) {
       // Temporarily hide scrollbars if they appear due to overflow
@@ -317,24 +314,62 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
       });
       document.body.style.overflow = originalOverflow; // Restore overflow
 
-      const imageData = canvas.toDataURL('image/png'); // Get image as Data URL
+      return canvas.toDataURL('image/png'); // Get image as Data URL
+    }
+    return null;
+  };
+
+  const handleApplyCurrentPage = async () => {
+      setSelectedCapture(null); // Deselect any active capture before saving
+      await new Promise(resolve => setTimeout(resolve, 50)); // Allow re-render
+
+      const renderedImage = await captureCanvasContent();
 
       const updatedPage = {
         ...pages[currentPageIndex],
-        renderedImage: imageData, // Store the rendered image
+        renderedImage: renderedImage,
       };
 
-      // Only pass the updated page, not all pages
+      // Update local state
+      setPages(prev => {
+        const newPages = [...prev];
+        newPages[currentPageIndex] = updatedPage;
+        return newPages;
+      });
+
+      // Persist to global state (App.js)
       onSave(updatedPage);
-    }
+      showNotification('success', 'Current page applied!');
   };
 
-  const handlePageInputChange = (e) => {
-    const pageNumber = parseInt(e.target.value, 10);
-    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= pages.length) {
-      setCurrentPageIndex(pageNumber - 1);
+  const handleSave = async () => {
+    // This now saves all pages
+    showNotification('info', 'Saving all changes...');
+
+    const updatedAllPages = [];
+    const originalPageIndex = currentPageIndex; // Store original page index
+
+    for (let i = 0; i < pages.length; i++) {
+      // Temporarily switch to the page to render
+      setCurrentPageIndex(i);
       setSelectedCapture(null);
+      // Await a small delay to ensure React has re-rendered the correct page
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const renderedImage = await captureCanvasContent();
+      updatedAllPages.push({
+        ...pages[i],
+        renderedImage: renderedImage,
+      });
     }
+
+    // Restore original page index after processing all pages
+    setCurrentPageIndex(originalPageIndex);
+    setSelectedCapture(null); // Deselect after saving
+
+    onSave(updatedAllPages); // Save the array of all updated pages
+    showNotification('success', 'All pages saved successfully!');
+    onClose(); // Close after saving all
   };
 
   return (
@@ -351,16 +386,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
               >
                 ◀
               </button>
-              <input
-                type="number"
-                min="1"
-                max={pages.length}
-                value={currentPageIndex + 1}
-                onChange={handlePageInputChange}
-                className="page-input"
-                aria-label="Jump to page"
-              />
-              <small>/ {pages.length}</small>
+              <small>Page {currentPageIndex + 1}/{pages.length}</small>
               <button
                 className="nav-btn"
                 onClick={nextPage}
@@ -372,7 +398,8 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
           </div>
           <div className="page-editor-actions">
             <button className="page-editor-btn cancel" onClick={onClose}>Exit</button>
-            <button className="page-editor-btn save-minimal" onClick={handleSave}>Save Changes</button>
+            <button className="page-editor-btn apply" onClick={handleApplyCurrentPage}>Apply</button>
+            <button className="page-editor-btn save" onClick={handleSave}>Save All Changes</button>
           </div>
         </div>
         

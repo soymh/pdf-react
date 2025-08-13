@@ -416,19 +416,22 @@ function App() {
     showNotification('Page deleted!', 'success');
   };
 
-  const updatePageCaptures = async (spaceId, updatedPage) => {
+  const updatePageCaptures = async (spaceId, pagesToUpdate) => {
     await updateWorkspace(w => ({
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
-            const updatedPages = space.pages.map(page => {
-            if (page.id === updatedPage.id) {
-              // Replace the existing page with the updated page (including renderedImage)
-              return updatedPage;
-            }
-            return page;
-          });
-          return { ...space, pages: updatedPages };
+          let newPages;
+          if (Array.isArray(pagesToUpdate)) {
+            // If it's an array, replace all pages with this new array
+            newPages = pagesToUpdate;
+          } else {
+            // If it's a single page, update that specific page by ID
+            newPages = space.pages.map(page =>
+              page.id === pagesToUpdate.id ? pagesToUpdate : page
+            );
+          }
+          return { ...space, pages: newPages };
         }
         return space;
       })
@@ -540,6 +543,7 @@ function App() {
             onMoveCapturesBetweenPages={moveCaptureBetweenPages}
             onZoomCapture={handleZoomCapture}
             onCloseZoom={handleCloseZoom}
+            showNotification={showNotification} // Pass showNotification
           />
         </div>
       </div>

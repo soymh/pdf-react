@@ -18,6 +18,7 @@ function SpaceItem({
   setIsDragging,
   onZoomCapture,
   onCloseZoom,
+  showNotification,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingPage, setEditingPage] = useState({ open: false, initialPageIndex: 0 });
@@ -159,11 +160,12 @@ function SpaceItem({
           <PageEditor
             space={space}
             onClose={() => setEditingPage({ open: false, initialPageIndex: 0 })}
-            onSave={(updatedPage) => {
-              onUpdateCaptures(space.id, updatedPage);
-              setEditingPage({ open: false, initialPageIndex: 0 });
+            onSave={(updatedPages) => {
+              onUpdateCaptures(space.id, updatedPages);
+              // setEditingPage({ open: false, initialPageIndex: 0 });
             }}
             initialPageIndex={editingPage.initialPageIndex}
+            showNotification={showNotification}
           />
         </div>,
         document.body

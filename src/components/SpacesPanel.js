@@ -14,6 +14,7 @@ function SpacesPanel({
   onMoveCapturesBetweenPages,
   onZoomCapture,
   onCloseZoom,
+  showNotification,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -93,6 +94,7 @@ function SpacesPanel({
               setIsDragging={setIsDragging}
               onZoomCapture={onZoomCapture}
               onCloseZoom={onCloseZoom}
+              showNotification={showNotification}
             />
           ))
         ) : (
