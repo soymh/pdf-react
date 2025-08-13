@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import './PageEditor.css';
 
-function PageEditor({ space, onClose, onSave }) {
+function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
   // A4 dimensions and scaling constants
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
   const MM_TO_PX = 96/25.4 // 1mm = 72/25.4 pixels (72 DPI is standard for PDF)
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [currentPageIndex, setCurrentPageIndex] = useState(initialPageIndex);
   const [pages, setPages] = useState(space.pages.map(page => ({
     ...page,
     captures: page.captures.map(capture => {

@@ -19,7 +19,7 @@ function SpaceItem({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [zoomedCapture, setZoomedCapture] = useState(null);
-  const [editingPage, setEditingPage] = useState(null);
+  const [editingPage, setEditingPage] = useState({ open: false, initialPageIndex: 0 });
 
   const handleSortEnd = (evt) => {
     const { from, to, newIndex, item } = evt;
@@ -76,7 +76,7 @@ function SpaceItem({
             </button>
             <button 
               className="space-btn" 
-              onClick={() => setEditingPage(space)} 
+              onClick={() => setEditingPage({ open: true, initialPageIndex: 0 })}
               title="Edit Pages Layout"
               style={{ background: 'rgba(147, 51, 234, 0.3)' }}
             >
@@ -101,7 +101,7 @@ function SpaceItem({
                     <div className="space-actions">
                       <button 
                         className="space-btn" 
-                        onClick={() => setEditingPage(page)}
+                        onClick={() => setEditingPage({ open: true, initialPageIndex: pageIndex })}
                         title="Edit Page Layout"
                         style={{ background: 'rgba(147, 51, 234, 0.3)' }}
                       >
@@ -216,15 +216,15 @@ function SpaceItem({
       </button>
       
       {/* Full Screen Editor Portal */}
-      {editingPage && createPortal(
+      {editingPage.open && createPortal(
         <div className="editor-overlay">
           <div className="editor-backdrop" />
           <PageEditor
             space={space}
-            onClose={() => setEditingPage(null)}
+            onClose={() => setEditingPage({ open: false, initialPageIndex: 0 })}
             onSave={(updatedPage) => {
               onUpdateCaptures(space.id, updatedPage);
-              setEditingPage(null);
+              setEditingPage({ open: false, initialPageIndex: 0 });
             }}
           />
         </div>,
