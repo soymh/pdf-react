@@ -93,7 +93,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         renderTaskRef.current = null;
       }
     };
-  }, [pdfData.pdf, pdfData.currentPage, scale]);
+  }, [pdfData.pdf, pdfData.currentPage, scale, pdfData.id, pdfData.totalPages]);
 
   const handleMouseDown = (e) => {
     setIsSelecting(true);
