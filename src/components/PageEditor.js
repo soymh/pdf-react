@@ -5,7 +5,7 @@ function PageEditor({ space, onClose, onSave }) {
   // A4 dimensions and scaling constants
   const A4_WIDTH_MM = 210;
   const A4_HEIGHT_MM = 297;
-  const MM_TO_PX = 2.835; // 1mm = 72/25.4 pixels (72 DPI is standard for PDF)
+  const MM_TO_PX = 96/25.4 // 1mm = 72/25.4 pixels (72 DPI is standard for PDF)
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [pages, setPages] = useState(space.pages.map(page => ({
     ...page,
@@ -128,28 +128,25 @@ function PageEditor({ space, onClose, onSave }) {
     if (!isDragging && !isResizing && !isRotating) return;
 
     if (isDragging) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      
+      const s = (canvasDimensions?.scale || 1);
+      const deltaX = (e.clientX - dragStart.x) / s;
+      const deltaY = (e.clientY - dragStart.y) / s;
+
       setPages(prev => prev.map((page, index) => {
-        if (index === currentPageIndex) {
-          return {
-            ...page,
-            captures: page.captures.map(capture => {
-              if (capture.id === selectedCapture) {
-                return {
-                  ...capture,
-                  position: {
-                    x: initialTransform.position.x + deltaX,
-                    y: initialTransform.position.y + deltaY
-                  }
-                };
+        if (index !== currentPageIndex) return page;
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id !== selectedCapture) return capture;
+            return {
+              ...capture,
+              position: {
+                x: initialTransform.position.x + deltaX,
+                y: initialTransform.position.y + deltaY
               }
-              return capture;
-            })
-          };
-        }
-        return page;
+            };
+          })
+        };
       }));
     }
     
@@ -186,18 +183,19 @@ function PageEditor({ space, onClose, onSave }) {
                     break;
                 }
                 
-                // Ensure minimum scale
+                // Ensure minimum scale (keep your existing guards above)
                 newScale.x = Math.max(0.1, newScale.x);
                 newScale.y = Math.max(0.1, newScale.y);
-                
-                // Update position to maintain the anchor point
+
+                // Convert screen-px diffs to A4-space px
+                const s = (canvasDimensions?.scale || 1);
+                const widthDiffScreen  = (initialWidth  * newScale.x) - (initialWidth  * initialTransform.scale.x);
+                const heightDiffScreen = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
+
                 let positionDelta = { x: 0, y: 0 };
-                const widthDiff = (initialWidth * newScale.x) - (initialWidth * initialTransform.scale.x);
-                const heightDiff = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
-                
-                if (handle.includes('w')) positionDelta.x = widthDiff;
-                if (handle.includes('n')) positionDelta.y = heightDiff;
-                
+                if (handle.includes('w')) positionDelta.x =  widthDiffScreen  / s;
+                if (handle.includes('n')) positionDelta.y =  heightDiffScreen / s;
+
                 return {
                   ...capture,
                   scale: newScale,
@@ -322,25 +320,30 @@ function PageEditor({ space, onClose, onSave }) {
 
   const handleSave = () => {
     // Convert editor coordinates to A4-relative coordinates for App.js compatibility
-    const scaledPages = pages.map(page => ({
-      ...page,
-      captures: page.captures.map(capture => {
-        return {
+  const A4_WIDTH_PX = A4_WIDTH_MM * MM_TO_PX;
+  const scaleFactor = (canvasDimensions?.width ?? A4_WIDTH_PX) / A4_WIDTH_PX;
+
+      const scaledPages = pages.map(page => ({
+        ...page,
+        captures: page.captures.map(capture => ({
           ...capture,
+          // position is currently in screen-px (after canvas zoom).
+          // keep it, but also persist the canvas zoom so export can unscale it.
+          editorScale: scaleFactor,
+
           position: {
             x: capture.position.x,
-            y: capture.position.y
+            y: capture.position.y,
           },
           dimensions: {
             width: capture.originalSize.width * capture.scale.x,
-            height: capture.originalSize.height * capture.scale.y
+            height: capture.originalSize.height * capture.scale.y,
           },
           scale: capture.scale,
           rotation: capture.rotation,
-          originalSize: capture.originalSize
-        };
-      })
-    }));
+          originalSize: capture.originalSize,
+        }))
+      }));
     onSave(scaledPages, currentPageIndex);
   };
 
@@ -381,7 +384,7 @@ function PageEditor({ space, onClose, onSave }) {
                 key={capture.id}
                 className={`capture-container ${selectedCapture === capture.id ? 'selected' : ''}`}
                 style={{
-                  transform: `translate(${capture.position.x}px, ${capture.position.y}px)`,
+                  transform: `translate(${(capture.position.x) * (canvasDimensions?.scale || 1)}px, ${(capture.position.y) * (canvasDimensions?.scale || 1)}px)`,
                 }}
                 onMouseDown={(e) => handleMouseDown(e, capture.id)}
                 onClick={(e) => handleCaptureClick(e, capture.id)}

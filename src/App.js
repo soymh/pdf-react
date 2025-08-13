@@ -289,7 +289,7 @@ function App() {
 
     const pageWidth = pdf.internal.pageSize.width; // ~210mm for A4
     const pageHeight = pdf.internal.pageSize.height; // ~297mm for A4
-    const MM_TO_PX = 2.835; // Pixels to mm conversion
+    const PX_TO_MM = 96/25.4*0.36; // Pixels to mm conversion
     
     let hasValidCaptures = false;
 
@@ -313,12 +313,12 @@ function App() {
         const originalSize = capture.originalSize || { width: img.width, height: img.height };
 
         // Convert pixel coordinates to mm coordinates for PDF
-        const xMm = position.x / MM_TO_PX;
-        const yMm = position.y / MM_TO_PX;
+        const xMm = position.x / PX_TO_MM;
+        const yMm = position.y / PX_TO_MM;
         
         // Calculate scaled dimensions in mm
-        const widthMm = (originalSize.width * scale.x) / MM_TO_PX;
-        const heightMm = (originalSize.height * scale.y) / MM_TO_PX;
+        const widthMm = (originalSize.width * scale.x) / PX_TO_MM;
+        const heightMm = (originalSize.height * scale.y) / PX_TO_MM;
 
         // Ensure capture stays within page bounds
         const finalWidth = Math.min(widthMm, pageWidth - 10); // 10mm margin
