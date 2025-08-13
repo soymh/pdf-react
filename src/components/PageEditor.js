@@ -329,6 +329,14 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
     }
   };
 
+  const handlePageInputChange = (e) => {
+    const pageNumber = parseInt(e.target.value, 10);
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= pages.length) {
+      setCurrentPageIndex(pageNumber - 1);
+      setSelectedCapture(null);
+    }
+  };
+
   return (
     <div className="page-editor-modal">
       <div className="page-editor">
@@ -343,10 +351,19 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0 }) {
               >
                 ◀
               </button>
-              <small>Page {currentPageIndex + 1}/{pages.length}</small>
-              <button 
-                className="nav-btn" 
-                onClick={nextPage} 
+              <input
+                type="number"
+                min="1"
+                max={pages.length}
+                value={currentPageIndex + 1}
+                onChange={handlePageInputChange}
+                className="page-input"
+                aria-label="Jump to page"
+              />
+              <small>/ {pages.length}</small>
+              <button
+                className="nav-btn"
+                onClick={nextPage}
                 disabled={currentPageIndex === pages.length - 1}
               >
                 ▶
