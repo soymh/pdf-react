@@ -240,15 +240,16 @@
             padding: 15px;
             overflow-x: auto;
             background: rgba(10, 10, 10, 0.5);
-            /* Remove all padding/margin adjustments */
             padding-right: 320px;
             scroll-behavior: smooth;
+            align-items: flex-start; /* Align items to the start to prevent vertical stretching */
         }
 
         /* Responsive PDF viewer sizing */
         .pdf-viewer {
-            min-width: 450px;
-            max-width: calc(50vw - 180px); /* Better sizing for 2 PDFs */
+            flex-shrink: 0; /* Prevent shrinking */
+            flex-grow: 1; /* Allow growing */
+            width: calc(100% / var(--pdf-count, 1) - (var(--pdf-count, 1) - 1) * 15px / var(--pdf-count, 1)); /* Distribute width equally */
             background: rgba(22, 33, 62, 0.9);
             border: 2px solid rgba(147, 51, 234, 0.6);
             border-radius: 12px;
@@ -257,18 +258,14 @@
             animation: fadeInUp 0.5s ease-out forwards;
             transition: all 0.3s ease;
             overflow: hidden;
+            max-width: 800px; /* Add a max-width to prevent excessive growth */
+            min-width: 600px; /* Ensure a minimum readable width */
         }
 
         .pdf-viewer:hover {
             transform: translateY(-3px);
             box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
             border-color: rgba(147, 51, 234, 0.8);
-        }
-
-        /* When there are exactly 2 PDFs, make them equal width */
-        .pdf-viewers:has(.pdf-viewer:nth-child(2):last-child) .pdf-viewer {
-            min-width: calc(50vw - 200px);
-            max-width: calc(50vw - 200px);
         }
 
         /* Enhanced PDF header */

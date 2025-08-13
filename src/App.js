@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { GlobalWorkerOptions } from 'pdfjs-dist/build/pdf';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/build/pdf';
 import { jsPDF } from "jspdf";
 
 import * as db from './db';
@@ -22,7 +22,8 @@ function App() {
   const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-
+  const loadedPdfIdsRef = useRef([]);
+  const pdfCacheRef = useRef(new Map());
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
   const spaces = activeWorkspace ? activeWorkspace.spaces : [];
   const activeSpaceId = activeWorkspace ? activeWorkspace.activeSpaceId : null;
@@ -56,34 +57,69 @@ function App() {
   useEffect(() => {
     if (!activeWorkspace) {
       setLivePdfDocs([]);
+      pdfCacheRef.current.forEach(pdf => {
+        try { pdf.destroy(); } catch (e) { console.warn("Error destroying cached PDF:", e); }
+      });
+      pdfCacheRef.current.clear();
+      loadedPdfIdsRef.current = [];
       return;
     }
 
-    const loadPdfObjects = async () => {
-      showNotification(`Loading workspace '${activeWorkspace.name}'...`, 'info');
-      const pdfsToLoad = activeWorkspace.pdfDocuments || [];
-    const loadedPdfs = await Promise.all(
-        pdfsToLoad.map(async (docInfo) => {
-          const pdfRecord = await db.getPdf(docInfo.id);
-          if (pdfRecord) {
-          try {
-              const pdf = await require('pdfjs-dist').getDocument(pdfRecord.data).promise;
-              // Use the currentPage from docInfo (persisted in activeWorkspace)
-              const currentPage = docInfo.currentPage || 1;
-              return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages };
-            } catch (error) {
-              showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
-            return null;
-          }
-          }
-        return null;
-      })
-    );
-      setLivePdfDocs(loadedPdfs.filter(Boolean));
-  };
+    const currentPdfInfos = activeWorkspace.pdfDocuments || [];
+    const currentPdfIds = currentPdfInfos.map(doc => doc.id).sort();
+    const previousPdfIds = loadedPdfIdsRef.current.sort();
 
-    loadPdfObjects();
-  }, [activeWorkspace, showNotification]); // Removed livePdfDocs from dependency array
+    // Clean up PDFs no longer in the active workspace *before* loading new ones
+      const pdfsToKeepIds = new Set(currentPdfIds);
+      pdfCacheRef.current.forEach((pdf, id) => {
+        if (!pdfsToKeepIds.has(id)) {
+          try { pdf.destroy(); } catch (e) { console.warn("Error destroying removed PDF:", e); }
+          pdfCacheRef.current.delete(id);
+        }
+      });
+
+    const loadOrUpdatePdfObjects = async () => {
+      // Only show notification if there's a significant change in the list of PDFs
+      const pdfListChanged =
+        currentPdfIds.length !== previousPdfIds.length ||
+        currentPdfIds.some((id, index) => id !== previousPdfIds[index]);
+
+      if (pdfListChanged) {
+        showNotification(`Loading workspace '${activeWorkspace.name}'...`, 'info');
+      }
+
+      const loadedPdfs = await Promise.all(
+        currentPdfInfos.map(async (docInfo) => {
+          let pdf = pdfCacheRef.current.get(docInfo.id);
+
+          if (!pdf) { // Only load PDF from DB if not in cache
+            const pdfRecord = await db.getPdf(docInfo.id);
+            if (pdfRecord) {
+          try {
+                pdf = await getDocument(pdfRecord.data).promise;
+                pdfCacheRef.current.set(docInfo.id, pdf); // Cache the new PDF object
+    } catch (error) {
+                showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
+                return null;
+    }
+            }
+          }
+
+          if (pdf) {
+            // Always take currentPage from docInfo, which reflects activeWorkspace state
+            const currentPage = docInfo.currentPage || 1;
+            return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages };
+          }
+          return null;
+        })
+  );
+
+      setLivePdfDocs(loadedPdfs.filter(Boolean));
+      loadedPdfIdsRef.current = currentPdfIds; // Update ref with the new set of IDs
+    };
+
+    loadOrUpdatePdfObjects();
+  }, [activeWorkspace, showNotification]);
 
   useEffect(() => {
     const notificationId = setTimeout(() => {
@@ -450,7 +486,11 @@ function App() {
         />
 
         <div className="main-content" style={{ marginLeft: 0 }}>
-          <div className="pdf-viewers" id="pdfViewers">
+          <div
+            className="pdf-viewers"
+            id="pdfViewers"
+            style={{ '--pdf-count': livePdfDocs.length || 1 }}
+          >
             {livePdfDocs.length > 0 ? (
               livePdfDocs.map((doc, index) => (
                 <PdfViewer

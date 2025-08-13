@@ -9,8 +9,19 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   
   useEffect(() => {
     const renderPage = async () => {
-      if (!pdfData.pdf) return;
-      
+      if (!pdfData.pdf) {
+        console.log(`PdfViewer ${pdfData.id}: No PDF object, skipping render.`);
+        return;
+      }
+
+      // Log detailed state just before attempting to render
+      console.log(`PdfViewer ${pdfData.id}: Render attempt - Page: ${pdfData.currentPage}, Total: ${pdfData.totalPages}, Is Destroyed: ${pdfData.pdf.isDestroyed}`);
+
+      if (pdfData.pdf.isDestroyed) {
+        console.warn(`PdfViewer ${pdfData.id}: Attempted to render a destroyed PDF, skipping.`);
+        return;
+      }
+
       try {
         // Cancel any ongoing render operation
         if (renderTaskRef.current) {
@@ -64,6 +75,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         renderTaskRef.current = null;
         
       } catch (error) {
+        // Only log errors that are not due to rendering cancellation
         if (error.name !== 'RenderingCancelledException') {
           console.error("Error rendering PDF page:", error);
         }
@@ -73,7 +85,11 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
     renderPage();
     return () => {
       if (renderTaskRef.current) {
-        renderTaskRef.current.cancel();
+        try {
+          renderTaskRef.current.cancel();
+        } catch (e) {
+          // Ignore cancellation errors
+        }
         renderTaskRef.current = null;
       }
     };
@@ -155,6 +171,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
 
         // Get the final high-quality image data
         const imageData = captureCanvas.toDataURL('image/png', 1.0); // Use PNG for quality
+        console.log('PdfViewer calling onCapture for PDF:', pdfData.name, pdfData.id);
         onCapture(imageData, pdfData);
       } catch (error) {
         console.error("Error during high-quality capture:", error);
@@ -205,8 +222,8 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
           <button className="pdf-nav-btn" onClick={handleZoomOut} title="Zoom Out">-</button>
           <button className="pdf-nav-btn" onClick={handleResetZoom} title="Reset Zoom">⚬</button>
           <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">+</button>
-          <button 
-            className="pdf-nav-btn" 
+          <button
+            className="pdf-nav-btn"
             onClick={() => changePage(-1)}
             disabled={pdfData.currentPage <= 1}
             title="Previous Page"
@@ -216,17 +233,17 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
           <span style={{ padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
             {pdfData.currentPage} / {pdfData.totalPages}
           </span>
-          <button 
-            className="pdf-nav-btn" 
+          <button
+            className="pdf-nav-btn"
             onClick={() => changePage(1)}
             disabled={pdfData.currentPage >= pdfData.totalPages}
             title="Next Page"
           >
             ▶
           </button>
-          <button 
-            className="pdf-nav-btn" 
-            onClick={() => onRemove(pdfData.id)} 
+          <button
+            className="pdf-nav-btn"
+            onClick={() => onRemove(pdfData.id)}
             style={{ background: 'linear-gradient(45deg, rgba(220, 38, 127, 0.4), rgba(190, 24, 93, 0.6))' }}
             title="Remove PDF"
           >
@@ -235,8 +252,8 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         </div>
       </div>
       <div className="pdf-canvas-container" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-        <canvas 
-          ref={canvasRef} 
+        <canvas
+          ref={canvasRef}
           className="pdf-canvas"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
