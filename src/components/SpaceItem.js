@@ -3,22 +3,23 @@ import { ReactSortable } from 'react-sortablejs';
 import { createPortal } from 'react-dom';
 import PageEditor from './PageEditor';
 
-function SpaceItem({ 
-  space, 
-  isActive, 
-  onSetActive, 
-  onDelete, 
-  onExport, 
-  onUpdateCaptures, 
+function SpaceItem({
+  space,
+  isActive,
+  onSetActive,
+  onDelete,
+  onExport,
+  onUpdateCaptures,
   onCaptureMove,
-  onAddNewPage, 
-  onDeletePage, 
+  onAddNewPage,
+  onDeletePage,
   onMoveCapturesBetweenPages,
-  isDragging, 
-  setIsDragging 
+  isDragging,
+  setIsDragging,
+  onZoomCapture,
+  onCloseZoom,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [zoomedCapture, setZoomedCapture] = useState(null);
   const [editingPage, setEditingPage] = useState({ open: false, initialPageIndex: 0 });
 
   const handleSortEnd = (evt) => {
@@ -47,19 +48,9 @@ function SpaceItem({
   };
 
   const handleCaptureClick = (capture) => {
-    setZoomedCapture(capture);
+    onZoomCapture(capture);
   };
 
-  const closeZoom = () => {
-    setZoomedCapture(null);
-  };
-
-  const handleZoomOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      closeZoom();
-    }
-  };
-  
   return (
     <>
       <div className="space-item">
@@ -161,60 +152,6 @@ function SpaceItem({
           </div>
         )}
       </div>
-
-      {/* Zoom Modal */}
-      {zoomedCapture && (
-        <div className="zoom-overlay" onClick={handleZoomOverlayClick}>
-          <img
-            src={zoomedCapture.imageData}
-            className="capture-thumbnail-zoom"
-            alt="Zoomed capture"
-          />
-          <div 
-            style={{
-              position: 'fixed',
-              top: '20px',
-              right: '20px',
-              background: 'rgba(147, 51, 234, 0.9)',
-              color: 'white',
-              padding: '10px 15px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              zIndex: 1001,
-              fontSize: '18px',
-              fontWeight: 'bold'
-            }}
-            onClick={closeZoom}
-          >
-            ✕
-          </div>
-          <div 
-            style={{
-              position: 'fixed',
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: 'rgba(0, 0, 0, 0.8)',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: '20px',
-              fontSize: '14px'
-            }}
-          >
-            From: {zoomedCapture.source} | Page: {zoomedCapture.page} | Click outside to close
-          </div>
-        </div>
-      )}
-
-      <button 
-        className="space-btn" 
-        onClick={() => setEditingPage(space)}
-        title="Edit Pages Layout"
-        style={{ background: 'rgba(147, 51, 234, 0.3)' }}
-      >
-        ✎
-      </button>
-      
       {/* Full Screen Editor Portal */}
       {editingPage.open && createPortal(
         <div className="editor-overlay">
@@ -226,6 +163,7 @@ function SpaceItem({
               onUpdateCaptures(space.id, updatedPage);
               setEditingPage({ open: false, initialPageIndex: 0 });
             }}
+            initialPageIndex={editingPage.initialPageIndex}
           />
         </div>,
         document.body

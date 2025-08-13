@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/build/pdf';
 import { jsPDF } from "jspdf";
+import { createPortal } from 'react-dom';
 
 import * as db from './db';
 
@@ -22,6 +23,7 @@ function App() {
   const [isSpaceModalOpen, setIsSpaceModalOpen] = useState(false);
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [zoomedCapture, setZoomedCapture] = useState(null);
   const loadedPdfIdsRef = useRef([]);
   const pdfCacheRef = useRef(new Map());
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
@@ -148,6 +150,19 @@ function App() {
       await db.saveWorkspace(updatedWorkspace);
       setWorkspaces(prev => prev.map(w => w.id === activeWorkspaceId ? updatedWorkspace : w));
   };
+
+  const handleZoomCapture = useCallback((capture) => {
+    setZoomedCapture(capture);
+  }, []);
+  const handleCloseZoom = useCallback(() => {
+    setZoomedCapture(null);
+  }, []);
+
+  const handleZoomOverlayClick = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      handleCloseZoom();
+    }
+  }, [handleCloseZoom]);
 
   const handleFileSelect = async (event) => {
     const files = Array.from(event.target.files).filter(f => f.type === 'application/pdf');
@@ -500,6 +515,7 @@ function App() {
                   onRemove={removePDF}
                   onPageChange={updatePdfPage}
                   onCapture={handleCapture}
+                  onZoomCapture={handleZoomCapture}
                 />
               ))
             ) : (
@@ -522,6 +538,8 @@ function App() {
             onAddNewPage={addNewPageToSpace}
             onDeletePage={deletePageFromSpace}
             onMoveCapturesBetweenPages={moveCaptureBetweenPages}
+            onZoomCapture={handleZoomCapture}
+            onCloseZoom={handleCloseZoom}
           />
         </div>
       </div>
@@ -548,6 +566,50 @@ function App() {
           onConfirm={handleCreateWorkspace}
           onCancel={() => setIsWorkspaceModalOpen(false)}
         />
+      )}
+
+      {zoomedCapture && createPortal(
+        <div className="zoom-overlay" onClick={handleZoomOverlayClick}>
+          <img
+            src={zoomedCapture.imageData}
+            className="capture-thumbnail-zoom"
+            alt="Zoomed capture"
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(147, 51, 234, 0.9)',
+              color: 'white',
+              padding: '10px 15px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              zIndex: 1001,
+              fontSize: '18px',
+              fontWeight: 'bold'
+            }}
+            onClick={handleCloseZoom}
+          >
+            ✕
+          </div>
+          <div
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0, 0, 0, 0.8)',
+              color: 'white',
+              padding: '10px 20px',
+              borderRadius: '20px',
+              fontSize: '14px'
+            }}
+          >
+            From: {zoomedCapture.source} | Page: {zoomedCapture.page} | Click outside to close
+          </div>
+        </div>,
+        document.body
       )}
 
       <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1001 }}>
