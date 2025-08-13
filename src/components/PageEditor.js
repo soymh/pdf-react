@@ -108,167 +108,130 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     });
   };
 
-  // Handle mouse movement for drag/resize/rotate
-  const handleMouseMove = (e) => {
-    if (!isDragging && !isResizing && !isRotating) return;
-
-    if (isDragging) {
-      const s = (canvasDimensions?.scale || 1);
-      const deltaX = (e.clientX - dragStart.x) / s;
-      const deltaY = (e.clientY - dragStart.y) / s;
-
-      setPages(prev => prev.map((page, index) => {
-        if (index !== currentPageIndex) return page;
-        return {
-          ...page,
-          captures: page.captures.map(capture => {
-            if (capture.id !== selectedCapture) return capture;
-            return {
-              ...capture,
-              position: {
-                x: initialTransform.position.x + deltaX,
-                y: initialTransform.position.y + deltaY
-              }
-            };
-          })
-        };
-      }));
-    }
-    
-    if (isResizing) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      
-      setPages(prev => prev.map((page, index) => {
-        if (index === currentPageIndex) {
-          return {
-            ...page,
-            captures: page.captures.map(capture => {
-              if (capture.id === selectedCapture) {
-                let newScale = { ...initialTransform.scale };
-                const { handle, initialWidth, initialHeight } = dragStart;
-                
-                // Calculate size changes based on handle position
-                switch(handle) {
-                  case 'se':
-                    newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
-                    newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
-                    break;
-                  case 'sw':
-                    newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
-                    newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
-                    break;
-                  case 'ne':
-                    newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
-                    newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
-                    break;
-                  case 'nw':
-                    newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
-                    newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
-                    break;
-                }
-                
-                // Ensure minimum scale (keep your existing guards above)
-                newScale.x = Math.max(0.1, newScale.x);
-                newScale.y = Math.max(0.1, newScale.y);
-
-                // Convert screen-px diffs to A4-space px
-                const s = (canvasDimensions?.scale || 1);
-                const widthDiffScreen  = (initialWidth  * newScale.x) - (initialWidth  * initialTransform.scale.x);
-                const heightDiffScreen = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
-
-                let positionDelta = { x: 0, y: 0 };
-                if (handle.includes('w')) positionDelta.x =  widthDiffScreen  / s;
-                if (handle.includes('n')) positionDelta.y =  heightDiffScreen / s;
-
-                return {
-                  ...capture,
-                  scale: newScale,
-                  position: {
-                    x: initialTransform.position.x - positionDelta.x,
-                    y: initialTransform.position.y - positionDelta.y
-                  }
-                };
-              }
-              return capture;
-            })
-          };
-        }
-        return page;
-      }));
-    }
-    
-    if (isRotating) {
-      const { centerX, centerY, initialRotation } = dragStart;
-      const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-      const startAngle = Math.atan2(dragStart.y - centerY, dragStart.x - centerX);
-      const rotation = initialRotation + (angle - startAngle) * (180 / Math.PI);
-      
-      setPages(prev => prev.map((page, index) => {
-        if (index === currentPageIndex) {
-          return {
-            ...page,
-            captures: page.captures.map(capture => {
-              if (capture.id === selectedCapture) {
-                return {
-                  ...capture,
-                  rotation
-                };
-              }
-              return capture;
-            })
-          };
-        }
-        return page;
-      }));
-    }
-  };
-
-  // Handle mouse up for all interactions
   const handleMouseUp = () => {
     setIsDragging(false);
     setIsResizing(false);
     setIsRotating(false);
   };
 
-  // Handle layer change (bring front/send back)
-  const handleLayerChange = (e, captureId, direction) => {
-        e.stopPropagation();
-    setPages(prev => prev.map((page, index) => {
-      if (index === currentPageIndex) {
-        const currentCaptures = [...page.captures];
-        const captureIndex = currentCaptures.findIndex(c => c.id === captureId);
-        if (captureIndex === -1) return page; // Capture not found
-
-        const [captureToMove] = currentCaptures.splice(captureIndex, 1);
-        if (direction === 'front') {
-          currentCaptures.push(captureToMove); // Move to end for 'bring to front'
-        } else if (direction === 'back') {
-          currentCaptures.unshift(captureToMove); // Move to beginning for 'send to back'
-        } else if (direction === 'forward') {
-          // Move one step forward, unless it's already at the front
-          if (captureIndex < currentCaptures.length) {
-            currentCaptures.splice(captureIndex + 1, 0, captureToMove);
-            } else {
-            currentCaptures.push(captureToMove);
-            }
-        } else if (direction === 'backward') {
-          // Move one step backward, unless it's already at the back
-          if (captureIndex > 0) {
-            currentCaptures.splice(captureIndex - 1, 0, captureToMove);
-          } else {
-            currentCaptures.unshift(captureToMove);
-          }
-        }
-
-        return { ...page, captures: currentCaptures };
-      }
-      return page;
-    }));
-    };
-
-  // Add/remove global mouse event listeners
   useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging && !isResizing && !isRotating) return;
+
+      if (isDragging) {
+        const s = (canvasDimensions?.scale || 1);
+        const deltaX = (e.clientX - dragStart.x) / s;
+        const deltaY = (e.clientY - dragStart.y) / s;
+
+        setPages(prev => prev.map((page, index) => {
+          if (index !== currentPageIndex) return page;
+          return {
+            ...page,
+            captures: page.captures.map(capture => {
+              if (capture.id !== selectedCapture) return capture;
+              return {
+                ...capture,
+                position: {
+                  x: initialTransform.position.x + deltaX,
+                  y: initialTransform.position.y + deltaY
+                }
+              };
+            })
+          };
+        }));
+      }
+
+      if (isResizing) {
+        const deltaX = e.clientX - dragStart.x;
+        const deltaY = e.clientY - dragStart.y;
+
+        setPages(prev => prev.map((page, index) => {
+          if (index === currentPageIndex) {
+            return {
+              ...page,
+              captures: page.captures.map(capture => {
+                if (capture.id === selectedCapture) {
+                  let newScale = { ...initialTransform.scale };
+                  const { handle, initialWidth, initialHeight } = dragStart;
+
+                // Calculate size changes based on handle position
+                  switch(handle) {
+                    case 'se':
+                      newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
+                      newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                      break;
+                    case 'sw':
+                      newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
+                      newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                      break;
+                    case 'ne':
+                      newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
+                      newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                      break;
+                    case 'nw':
+                      newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
+                      newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                      break;
+                    default:
+                      break;
+                  }
+
+                // Ensure minimum scale (keep your existing guards above)
+                  newScale.x = Math.max(0.1, newScale.x);
+                  newScale.y = Math.max(0.1, newScale.y);
+
+                // Convert screen-px diffs to A4-space px
+                  const s = (canvasDimensions?.scale || 1);
+                  const widthDiffScreen  = (initialWidth  * newScale.x) - (initialWidth  * initialTransform.scale.x);
+                  const heightDiffScreen = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
+
+                  let positionDelta = { x: 0, y: 0 };
+                  if (handle.includes('w')) positionDelta.x =  widthDiffScreen  / s;
+                  if (handle.includes('n')) positionDelta.y =  heightDiffScreen / s;
+
+                  return {
+                    ...capture,
+                    scale: newScale,
+                    position: {
+                      x: initialTransform.position.x - positionDelta.x,
+                      y: initialTransform.position.y - positionDelta.y
+                    }
+                  };
+                }
+                return capture;
+              })
+            };
+          }
+          return page;
+        }));
+      }
+
+      if (isRotating) {
+        const { centerX, centerY, initialRotation } = dragStart;
+        const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+        const startAngle = Math.atan2(dragStart.y - centerY, dragStart.x - centerX);
+        const rotation = initialRotation + (angle - startAngle) * (180 / Math.PI);
+
+        setPages(prev => prev.map((page, index) => {
+          if (index === currentPageIndex) {
+            return {
+              ...page,
+              captures: page.captures.map(capture => {
+                if (capture.id === selectedCapture) {
+                  return {
+                    ...capture,
+                    rotation
+                  };
+                }
+                return capture;
+              })
+            };
+          }
+          return page;
+        }));
+      }
+  };
+
     const handleGlobalMouseMove = (e) => handleMouseMove(e);
     const handleGlobalMouseUp = () => handleMouseUp();
 
@@ -276,11 +239,12 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
     }
+
     return () => {
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, isResizing, isRotating]);
+  }, [isDragging, isResizing, isRotating, canvasDimensions, currentPageIndex, dragStart, initialTransform, selectedCapture]);
 
   // Handle click outside to deselect
   const handleContainerClick = (e) => {
@@ -332,8 +296,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  }, [A4_WIDTH_MM, A4_HEIGHT_MM, MM_TO_PX]);
   const captureCanvasContent = async () => {
     const canvasElement = canvasRef.current;
     if (canvasElement) {
@@ -407,32 +370,38 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     onClose(); // Close after saving all
   };
 
-    const handleLayerChangeOriginal = (e, captureId, action) => {
+  const handleLayerChange = (e, captureId, direction) => {
         e.stopPropagation();
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        const currentCaptures = [...page.captures];
+        const captureIndex = currentCaptures.findIndex(c => c.id === captureId);
+        if (captureIndex === -1) return page;
 
-        setPages(prev => {
-            const newPages = [...prev];
-            const page = { ...newPages[currentPageIndex] };
-            const captures = [...page.captures];
-
-            const captureIndex = captures.findIndex(c => c.id === captureId);
-            if (captureIndex === -1) return prev;
-
-            const capture = captures[captureIndex];
-            captures.splice(captureIndex, 1);
-
-            if (action === 'front') {
-                captures.push(capture);
+        const [captureToMove] = currentCaptures.splice(captureIndex, 1);
+        if (direction === 'front') {
+          currentCaptures.push(captureToMove);
+        } else if (direction === 'back') {
+          currentCaptures.unshift(captureToMove);
+        } else if (direction === 'forward') {
+          if (captureIndex < currentCaptures.length) {
+            currentCaptures.splice(captureIndex + 1, 0, captureToMove);
             } else {
-                captures.unshift(capture);
+            currentCaptures.push(captureToMove);
             }
+        } else if (direction === 'backward') {
+          if (captureIndex > 0) {
+            currentCaptures.splice(captureIndex - 1, 0, captureToMove);
+          } else {
+            currentCaptures.unshift(captureToMove);
+          }
+        }
 
-            page.captures = captures;
-            newPages[currentPageIndex] = page;
-
-            return newPages;
-        });
-    };
+        return { ...page, captures: currentCaptures };
+      }
+      return page;
+    }));
+  };
 
   return (
     <div className="page-editor-modal">
@@ -497,6 +466,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                       <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
                       <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
                       <div className="rotate-handle" onMouseDown={(e) => handleRotateStart(e, capture.id)}>⟲</div>
+                      {/* Layering Handles */}
                       <button className="layer-handle bring-front" onClick={(e) => handleLayerChange(e, capture.id, 'front')} title="Bring to Front">⬆</button>
                       <button className="layer-handle send-back" onClick={(e) => handleLayerChange(e, capture.id, 'back')} title="Send to Back">⬇</button>
                       <button className="layer-handle bring-forward" onClick={(e) => handleLayerChange(e, capture.id, 'forward')} title="Bring Forward">⇧</button>

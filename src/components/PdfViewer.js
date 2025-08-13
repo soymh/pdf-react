@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 
 function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   const canvasRef = useRef(null);
@@ -195,13 +195,12 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
     };
   };
 
-  const changePage = (offset) => {
+  const changePage = useCallback((offset) => {
     const newPage = pdfData.currentPage + offset;
     if (newPage > 0 && newPage <= pdfData.totalPages) {
       onPageChange(pdfData.id, newPage);
     }
-  };
-
+  }, [pdfData.id, pdfData.currentPage, pdfData.totalPages, onPageChange]);
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.25, 3)); // Max scale 3x
   };
@@ -209,7 +208,6 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.25, 0.5)); // Min scale 0.5x
   };
-
   const handleResetZoom = () => {
     setScale(1.5);
   };

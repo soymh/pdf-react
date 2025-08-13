@@ -36,20 +36,17 @@ function SpaceItem({
     if (setIsDragging) setIsDragging(false);
   };
 
-  const handleCaptureAdd = (newCaptures, pageId, sortable, evt) => {
-    if (evt && evt.originalEvent) {
-      evt.originalEvent.stopPropagation();
-    }
-
-    onUpdateCaptures(space.id, pageId, newCaptures);
-  };
-
   const getTotalCaptures = () => {
-    return space.pages ? space.pages.reduce((sum, page) => sum + page.captures.length, 0) : 0;
+    // Defensive check: ensure space.pages is an array
+    if (Array.isArray(space.pages)) {
+      return space.pages.reduce((sum, page) => sum + (page.captures ? page.captures.length : 0), 0);
+    }
+    console.warn(`Space ${space.id} (${space.name}): space.pages is not an array. Current value:`, space.pages);
+    return 0; // Return 0 if pages is not an array
   };
 
   const handleCaptureClick = (capture) => {
-    onZoomCapture(capture);
+    onZoomCapture(capture); // Call prop to open global zoom
   };
 
   return (
@@ -153,6 +150,7 @@ function SpaceItem({
           </div>
         )}
       </div>
+
       {/* Full Screen Editor Portal */}
       {editingPage.open && createPortal(
         <div className="editor-overlay">
@@ -162,7 +160,7 @@ function SpaceItem({
             onClose={() => setEditingPage({ open: false, initialPageIndex: 0 })}
             onSave={(updatedPages) => {
               onUpdateCaptures(space.id, updatedPages);
-              // setEditingPage({ open: false, initialPageIndex: 0 });
+              // Removed: setEditingPage({ open: false, initialPageIndex: 0 });
             }}
             initialPageIndex={editingPage.initialPageIndex}
             showNotification={showNotification}

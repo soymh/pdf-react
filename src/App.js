@@ -370,13 +370,13 @@ function App() {
     }
   };
 
-  const layoutCapturesOnPdfPage = async (pdf, captures) => {
-    // This function is no longer needed if we're using pre-rendered images
-    // However, keeping it for now in case there's other logic that relies on it.
-    // It will not be called for pages with renderedImage.
-    console.warn('layoutCapturesOnPdfPage was called, but should be superseded by renderedImage.');
-    return false;
-  };
+  // const layoutCapturesOnPdfPage = async (pdf, captures) => {
+  //   // This function is no longer needed if we're using pre-rendered images
+  //   // However, keeping it for now in case there's other logic that relies on it.
+  //   // It will not be called for pages with renderedImage.
+  //   console.warn('layoutCapturesOnPdfPage was called, but should be superseded by renderedImage.');
+  //   return false;
+  // };
 
   const clearAll = async () => {
     if (window.confirm('Are you sure you want to clear all PDFs and spaces? This action cannot be undone.')) {
