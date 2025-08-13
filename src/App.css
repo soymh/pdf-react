@@ -11,6 +11,18 @@
             overflow: hidden;
             height: 100vh;
         }
+        
+        body:has(.workspaces-panel:hover) .container {
+            padding-left: 250px;
+        }
+
+        /* body:has(.spaces-panel:hover) .container {
+            padding-right: 50px;
+        } */
+
+        body:has(.header:hover) .container {
+            padding-top: 70px;
+        }
 
         .cyber-grid {
             position: fixed;

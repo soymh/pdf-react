@@ -477,7 +477,7 @@ function App() {
         onCreate={() => setIsWorkspaceModalOpen(true)}
       />
 
-      <div className="container" style={{ marginLeft: '250px' }}>
+      <div className="container">
         <Header
           onLoadClick={() => activeWorkspaceId && document.getElementById('fileInput').click()}
           onCreateSpace={() => activeWorkspaceId && setIsSpaceModalOpen(true)}
@@ -485,7 +485,7 @@ function App() {
           onClearAll={clearAll}
         />
 
-        <div className="main-content" style={{ marginLeft: 0 }}>
+        <div className="main-content">
           <div
             className="pdf-viewers"
             id="pdfViewers"
