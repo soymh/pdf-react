@@ -68,7 +68,9 @@ function App() {
           if (pdfRecord) {
           try {
               const pdf = await require('pdfjs-dist').getDocument(pdfRecord.data).promise;
-              return { id: docInfo.id, name: docInfo.name, pdf, currentPage: 1, totalPages: pdf.numPages };
+              // Use the currentPage from docInfo (persisted in activeWorkspace)
+              const currentPage = docInfo.currentPage || 1;
+              return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages };
             } catch (error) {
               showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
             return null;
@@ -81,7 +83,7 @@ function App() {
   };
 
     loadPdfObjects();
-  }, [activeWorkspace, showNotification]);
+  }, [activeWorkspace, showNotification]); // Removed livePdfDocs from dependency array
 
   useEffect(() => {
     const notificationId = setTimeout(() => {
@@ -139,12 +141,21 @@ function App() {
     }));
   };
 
-  const updatePdfPage = (pdfId, newPage) => {
+  const updatePdfPage = async (pdfId, newPage) => {
+    // Update livePdfDocs immediately for responsiveness
     setLivePdfDocs(docs =>
       docs.map(doc =>
         doc.id === pdfId ? { ...doc, currentPage: newPage } : doc
       )
     );
+
+    // Also update the activeWorkspace to persist the current page
+    await updateWorkspace(w => ({
+      ...w,
+      pdfDocuments: w.pdfDocuments.map(doc =>
+        doc.id === pdfId ? { ...doc, currentPage: newPage } : doc
+      ),
+    }));
   };
 
   const setActiveSpaceId = async (spaceId) => {
