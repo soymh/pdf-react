@@ -438,12 +438,6 @@ function App() {
     }));
   };
 
-  const handleCaptureMove = async (spaceId, targetPageId, newCaptures, captureItem) => {
-    // This function is deprecated and will be removed.
-    // The logic is flawed and has been replaced by `moveCaptureBetweenPages`.
-    console.warn("handleCaptureMove is deprecated.");
-  };
-
   const moveCaptureBetweenPages = async (spaceId, captureId, fromPageId, toPageId, newIndex) => {
     await updateWorkspace(w => ({
       ...w,

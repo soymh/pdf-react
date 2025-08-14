@@ -182,6 +182,7 @@ function SpaceItem({
         )}
       </div>
 
+      {/* Full Screen Editor Portal */}
       {editingPage.open && createPortal(
         <div className="editor-overlay">
           <div className="editor-backdrop" />
@@ -190,6 +191,7 @@ function SpaceItem({
             onClose={() => setEditingPage({ open: false, initialPageIndex: 0 })}
             onSave={(updatedPages) => {
               onUpdateCaptures(space.id, updatedPages);
+              // Removed: setEditingPage({ open: false, initialPageIndex: 0 });
             }}
             initialPageIndex={editingPage.initialPageIndex}
             showNotification={showNotification}
