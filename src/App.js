@@ -514,6 +514,25 @@ function App() {
     showNotification('Capture moved!', 'success');
   };
 
+  const deleteCaptureFromSpacePage = async (spaceId, pageId, captureId) => {
+    await updateWorkspace(w => ({
+      ...w,
+      spaces: w.spaces.map(space => {
+        if (space.id === spaceId) {
+          const updatedPages = space.pages.map(page => {
+            if (page.id.toString() === pageId.toString()) {
+              return { ...page, captures: page.captures.filter(c => c.id.toString() !== captureId.toString()) };
+            }
+            return page;
+          });
+          return { ...space, pages: updatedPages };
+        }
+        return space;
+      })
+    }));
+    showNotification('Capture deleted!', 'success');
+  };
+
   return (
     <>
       <div className="cyber-grid"></div>
@@ -572,7 +591,8 @@ function App() {
             onMoveCapturesBetweenPages={moveCaptureBetweenPages}
             onZoomCapture={handleZoomCapture}
             onCloseZoom={handleCloseZoom}
-            showNotification={showNotification} // Pass showNotification
+            showNotification={showNotification}
+            onDeleteCapture={deleteCaptureFromSpacePage}
           />
         </div>
       </div>

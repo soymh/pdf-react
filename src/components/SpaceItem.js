@@ -18,6 +18,7 @@ function SpaceItem({
   onZoomCapture,
   onCloseZoom,
   showNotification,
+  onDeleteCapture,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingPage, setEditingPage] = useState({ open: false, initialPageIndex: 0 });
@@ -124,7 +125,6 @@ function SpaceItem({
                     </div>
                   </div>
                   
-                  {/* IMPORTANT: Put data-page-id back on the parent div here */}
                   <div className="capture-grid" data-page-id={page.id}>
                     <ReactSortable
                       list={page.captures}
@@ -167,6 +167,18 @@ function SpaceItem({
                               handleCaptureClick(capture);
                             }}
                           />
+                          <button
+                            className="delete-capture-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Are you sure you want to delete this capture?')) {
+                                onDeleteCapture(space.id, page.id, capture.id);
+                              }
+                            }}
+                            title="Delete Capture"
+                          >
+                            ✕
+                          </button>
                         </div>
                       ))}
                     </ReactSortable>

@@ -403,6 +403,24 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     }));
   };
 
+  // NEW: Function to handle deleting a capture from the current page locally
+  const handleDeleteCaptureLocal = (e, captureId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this capture from the page?')) {
+      setPages(prev => prev.map((page, index) => {
+        if (index === currentPageIndex) {
+          return {
+            ...page,
+            captures: page.captures.filter(c => c.id !== captureId)
+          };
+        }
+        return page;
+      }));
+      setSelectedCapture(null); // Deselect after deletion
+      showNotification('Capture removed from page!', 'success');
+    }
+  };
+
   return (
     <div className="page-editor-modal">
       <div className="page-editor">
@@ -471,6 +489,14 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                       <button className="layer-handle send-back" onClick={(e) => handleLayerChange(e, capture.id, 'back')} title="Send to Back">⬇</button>
                       <button className="layer-handle bring-forward" onClick={(e) => handleLayerChange(e, capture.id, 'forward')} title="Bring Forward">⇧</button>
                       <button className="layer-handle send-backward" onClick={(e) => handleLayerChange(e, capture.id, 'backward')} title="Send Backward">⇩</button>
+                      {/* NEW: Delete Button in Editor */}
+                      <button
+                        className="delete-handle"
+                        onClick={(e) => handleDeleteCaptureLocal(e, capture.id)}
+                        title="Delete Capture from Page"
+                      >
+                        ✕
+                      </button>
                     </>
                   )}
                 </div>

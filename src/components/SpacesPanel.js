@@ -15,6 +15,7 @@ function SpacesPanel({
   onZoomCapture,
   onCloseZoom,
   showNotification,
+  onDeleteCapture, // NEW: Prop for deleting a specific capture
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -95,6 +96,7 @@ function SpacesPanel({
               onZoomCapture={onZoomCapture}
               onCloseZoom={onCloseZoom}
               showNotification={showNotification}
+              onDeleteCapture={onDeleteCapture} // NEW: Pass it down
             />
           ))
         ) : (
