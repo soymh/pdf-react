@@ -88,7 +88,7 @@ pdf-react/
 ## Future Ideas
 
 This project has a solid foundation. Here are some ideas for future enhancements:
--   [ ] Implement easy captured sections manipulation (e.g., Add Multiple captured pages freely in a PDF page).
+-   [x] Implement easy captured sections manipulation (e.g., Add Multiple captured pages freely in a PDF page).
 -   [ ] Add AI tools to make Markdown Notes out of your captured PDFs!
 -   [ ] Implement a cloud api trigger for converting notes to markdown using Vision AI models.
 -   [ ] Add more export options...
