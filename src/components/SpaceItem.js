@@ -10,7 +10,6 @@ function SpaceItem({
   onDelete,
   onExport,
   onUpdateCaptures,
-  onCaptureMove,
   onAddNewPage,
   onDeletePage,
   onMoveCapturesBetweenPages,
@@ -25,28 +24,45 @@ function SpaceItem({
 
   const handleSortEnd = (evt) => {
     const { from, to, newIndex, item } = evt;
-    const fromPageId = from.dataset.pageId;
-    const toPageId = to.dataset.pageId;
-    const captureId = item.dataset.id;
 
-    if (fromPageId !== toPageId && captureId) {
+    console.log('--- handleSortEnd Debugging ---');
+    console.log('evt object:', evt);
+    console.log('evt.from (DOM element):', from);
+    console.log('evt.to (DOM element):', to);
+    console.log('evt.item (Dragged DOM element):', item);
+
+    const fromPageId = from ? from.closest('[data-page-id]')?.dataset.pageId : 'undefined_from';
+    const toPageId = to ? to.closest('[data-page-id]')?.dataset.pageId : 'undefined_to';
+    const captureId = item ? (item.id || item.dataset.id) : 'undefined_capture';
+
+    console.log('Resolved fromPageId:', fromPageId);
+    console.log('Resolved toPageId:', toPageId);
+    console.log('Resolved captureId:', captureId);
+    console.log('newIndex:', newIndex);
+
+    if (fromPageId !== 'undefined_from' && toPageId !== 'undefined_to' && fromPageId !== toPageId && captureId !== 'undefined_capture') {
+      console.log('CONDITION MET: Calling onMoveCapturesBetweenPages...');
+      if (toPageId === '') {
+          console.log('WARNING: toPageId is empty string. This might still be an issue with target list ID resolution.');
+      }
       onMoveCapturesBetweenPages(space.id, captureId, fromPageId, toPageId, newIndex);
+    } else {
+      console.log('CONDITION NOT MET. Not a cross-page move or missing data.');
     }
     
     if (setIsDragging) setIsDragging(false);
   };
 
   const getTotalCaptures = () => {
-    // Defensive check: ensure space.pages is an array
     if (Array.isArray(space.pages)) {
       return space.pages.reduce((sum, page) => sum + (page.captures ? page.captures.length : 0), 0);
     }
     console.warn(`Space ${space.id} (${space.name}): space.pages is not an array. Current value:`, space.pages);
-    return 0; // Return 0 if pages is not an array
+    return 0;
   };
 
   const handleCaptureClick = (capture) => {
-    onZoomCapture(capture); // Call prop to open global zoom
+    onZoomCapture(capture);
   };
 
   return (
@@ -77,7 +93,6 @@ function SpaceItem({
         </div>
         {isExpanded && (
           <div className="space-content active">
-            {/* Add New Page Button */}
             <div className="add-page-btn" onClick={() => onAddNewPage(space.id)}>
               ➕ Add New Page
             </div>
@@ -109,23 +124,39 @@ function SpaceItem({
                     </div>
                   </div>
                   
+                  {/* IMPORTANT: Put data-page-id back on the parent div here */}
                   <div className="capture-grid" data-page-id={page.id}>
                     <ReactSortable
                       list={page.captures}
-                      setList={(newCaptures) => onUpdateCaptures(space.id, page.id, newCaptures)}
+                      setList={(newCaptures, sortable) => {
+                        if (!sortable) {
+                          console.warn("ReactSortable setList: 'sortable' object is null or undefined, skipping update.");
+                          return;
+                        }
+                        const parentPageElement = sortable.el.closest('[data-page-id]');
+                        const parentPageId = parentPageElement ? parentPageElement.dataset.pageId : null;
+                        if (parentPageId === page.id.toString()) {
+                          const updatedPage = { ...page, captures: newCaptures };
+                          onUpdateCaptures(space.id, updatedPage);
+                        }
+                      }}
                       animation={150}
                       ghostClass="sortable-ghost"
                       chosenClass="sortable-chosen"
-                      group="shared-captures"
+                      group={{ name: "shared-captures", pull: true, put: true }}
                       onStart={() => setIsDragging && setIsDragging(true)}
                       onEnd={handleSortEnd}
                       forceFallback={true}
                       fallbackClass="sortable-fallback"
                     >
                       {page.captures.map((capture, index) => (
-                        <div key={`${page.id}-${capture.id}`} className="capture-thumbnail-container" data-id={capture.id}>
+                        <div
+                          key={capture.id}
+                          className="capture-thumbnail-container"
+                          data-id={capture.id}
+                          id={capture.id.toString()}
+                        >
                           <img
-                            data-id={capture.id}
                             src={capture.imageData}
                             className="capture-thumbnail"
                             alt="Captured snippet"
@@ -151,7 +182,6 @@ function SpaceItem({
         )}
       </div>
 
-      {/* Full Screen Editor Portal */}
       {editingPage.open && createPortal(
         <div className="editor-overlay">
           <div className="editor-backdrop" />
@@ -160,7 +190,6 @@ function SpaceItem({
             onClose={() => setEditingPage({ open: false, initialPageIndex: 0 })}
             onSave={(updatedPages) => {
               onUpdateCaptures(space.id, updatedPages);
-              // Removed: setEditingPage({ open: false, initialPageIndex: 0 });
             }}
             initialPageIndex={editingPage.initialPageIndex}
             showNotification={showNotification}

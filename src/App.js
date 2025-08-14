@@ -437,51 +437,63 @@ function App() {
       })
     }));
   };
+
   const handleCaptureMove = async (spaceId, targetPageId, newCaptures, captureItem) => {
-    await updateWorkspace(w => ({
-      ...w,
-      spaces: w.spaces.map(space => {
-        if (space.id === spaceId) {
-          const updatedPages = space.pages.map(page => {
-            if (page.id === targetPageId) {
-              // Add to target page (remove duplicates first)
-              const existingIds = page.captures.map(c => c.id);
-              const filteredNewCaptures = newCaptures.filter(c => !existingIds.includes(c.id));
-              return { ...page, captures: [...page.captures, ...filteredNewCaptures] };
-            } else {
-              // Remove from source pages
-              return {
-                ...page,
-                captures: page.captures.filter(capture => capture.id !== captureItem.id)
-              };
-            }
-          });
-          return { ...space, pages: updatedPages };
-        }
-        return space;
-      })
-    }));
+    // This function is deprecated and will be removed.
+    // The logic is flawed and has been replaced by `moveCaptureBetweenPages`.
+    console.warn("handleCaptureMove is deprecated.");
   };
-  const moveCaptureBetweenPages = async (spaceId, captureId, fromPageId, toPageId) => {
+
+  const moveCaptureBetweenPages = async (spaceId, captureId, fromPageId, toPageId, newIndex) => {
     await updateWorkspace(w => ({
       ...w,
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           let captureToMove = null;
-          const updatedPages = space.pages.map(page => {
-            if (page.id === fromPageId) {
-              captureToMove = page.captures.find(c => c.id === captureId);
-              return { ...page, captures: page.captures.filter(c => c.id !== captureId) };
-            } else if (page.id === toPageId && captureToMove) {
-              return { ...page, captures: [...page.captures, captureToMove] };
+          // First, find the capture and remove it from the source page
+          // Convert p.id to string for comparison
+          const sourcePage = space.pages.find(p => p.id.toString() === fromPageId);
+          if (sourcePage) {
+            // Convert c.id to string for comparison
+            captureToMove = sourcePage.captures.find(c => c.id.toString() === captureId);
+          }
+
+          if (!captureToMove) {
+            console.error("Capture to move not found!");
+            // Log additional debug info here
+            console.error("Debug Info - moveCaptureBetweenPages:");
+            console.error("  spaceId:", spaceId);
+            console.error("  captureId (from DOM):", captureId);
+            console.error("  fromPageId (from DOM):", fromPageId);
+            console.error("  toPageId (from DOM):", toPageId);
+            console.error("  sourcePage found:", !!sourcePage);
+            if (sourcePage) {
+                console.error("  sourcePage.id (in state):", sourcePage.id);
+                console.error("  sourcePage.captures IDs (in state):", sourcePage.captures.map(c => c.id));
+            }
+            return space; // Return original state if capture not found
+          }
+
+          const newPages = space.pages.map(page => {
+            // Remove from the original page - compare page.id as string
+            if (page.id.toString() === fromPageId) {
+              return { ...page, captures: page.captures.filter(c => c.id.toString() !== captureId) };
+            }
+            // Add to the new page at the correct index - compare page.id as string
+            else if (page.id.toString() === toPageId) {
+              const newCaptures = [...page.captures];
+              newCaptures.splice(newIndex, 0, captureToMove);
+              return { ...page, captures: newCaptures };
             }
             return page;
           });
-          return { ...space, pages: updatedPages };
+
+          return { ...space, pages: newPages };
         }
         return space;
       })
     }));
+    showNotification('Capture moved!', 'success');
   };
 
   return (
@@ -537,7 +549,6 @@ function App() {
             onDeleteSpace={deleteSpace}
             onExportSpace={exportSpaceAsPdf}
             onUpdateCaptures={updatePageCaptures}
-            onCaptureMove={handleCaptureMove}
             onAddNewPage={addNewPageToSpace}
             onDeletePage={deletePageFromSpace}
             onMoveCapturesBetweenPages={moveCaptureBetweenPages}
