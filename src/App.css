@@ -1102,22 +1102,25 @@ body.zen-mode .main-content {
 body.zen-mode .pdf-viewers {
     flex: 1;
     display: flex;
-    gap: 10px;
-    padding: 10px;
-    overflow-x: auto;
+    gap: 20px; /* Increased gap for better spacing */
+    padding: 20px; /* Increased padding */
+    overflow-x: hidden; /* Prevent horizontal scroll for wrapped content */
+    overflow-y: auto; /* Allow vertical scroll if PDFs wrap */
     background: transparent;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start; /* Align items to the start */
+    justify-content: flex-start; /* Justify items to the start */
     padding-right: 0; /* No right padding in zen mode, handled by container */
+    flex-wrap: wrap; /* Allow PDFs to wrap to the next line */
 }
 
 body.zen-mode .pdf-viewer {
     flex-shrink: 0;
-    flex-grow: 1;
-    width: calc(50% - 5px);
-    height: calc(100vh - 20px);
-    max-width: none;
-    min-width: unset;
+    flex-grow: 1; /* Allow growing to fill space */
+    flex-basis: 0; /* Allow shrinking below content size */
+    min-width: 45%; /* Ensure minimum width for two columns initially */
+    height: calc(100vh - 40px); /* Adjust height considering new padding */
+    max-width: unset; /* Remove max-width constraint */
+    min-width: unset; /* Remove min-width constraint */
     border: 2px solid rgba(147, 51, 234, 0.6);
     box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
 }
@@ -1164,4 +1167,54 @@ body.zen-mode .header {
     background: rgba(239, 68, 68, 1); /* Brighter red on hover */
     transform: scale(1.05);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Zen Mode specific styles for PdfViewer */
+body.zen-mode .pdf-viewer .pdf-header {
+    background: linear-gradient(135deg, rgba(83, 52, 131, 0.7), rgba(147, 51, 234, 0.6));
+    border-bottom: none; /* Remove bottom border in zen mode */
+    padding: 10px;
+    display: flex;
+    justify-content: center; /* Center controls */
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+body.zen-mode .pdf-viewer .pdf-header:hover {
+    background: linear-gradient(135deg, rgba(83, 52, 131, 0.95), rgba(147, 51, 234, 0.8));
+}
+
+body.zen-mode .pdf-viewer .pdf-title {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute; /* Take it out of flow */
+    transform: translateY(-100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+body.zen-mode .pdf-viewer:hover .pdf-title {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    position: static; /* Put it back in flow on hover */
+    width: 100%; /* Ensure it takes full width */
+    text-align: center;
+}
+
+body.zen-mode .pdf-viewer .pdf-controls {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    display: flex; /* Ensure it's a flex container */
+    gap: 10px; /* Spacing between buttons */
+}
+
+body.zen-mode .pdf-viewer:hover .pdf-controls {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Hide the remove PDF button */
+body.zen-mode .pdf-viewer .pdf-controls .pdf-nav-btn[title="Remove PDF"] {
+    display: none;
 }
