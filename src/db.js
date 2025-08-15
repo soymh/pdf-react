@@ -42,6 +42,29 @@ export async function deleteWorkspace(workspaceId) {
   return db.delete(WORKSPACES_STORE, workspaceId);
 }
 
+export async function deleteAllWorkspaces() {
+  const db = await initDB();
+  const tx = db.transaction([WORKSPACES_STORE, PDF_STORE], 'readwrite');
+  const workspaceStore = tx.objectStore(WORKSPACES_STORE);
+  const pdfStore = tx.objectStore(PDF_STORE);
+
+  // Get all workspaces to identify associated PDFs
+  const allWorkspaces = await workspaceStore.getAll();
+
+  // Delete all associated PDFs first
+  for (const workspace of allWorkspaces) {
+    if (workspace.pdfDocuments) {
+      for (const doc of workspace.pdfDocuments) {
+        await pdfStore.delete(doc.id);
+      }
+    }
+  }
+
+  // Clear the workspaces store
+  await workspaceStore.clear();
+
+  return tx.done;
+}
 
 // --- PDF Methods ---
 
@@ -59,3 +82,4 @@ export async function deletePdf(pdfId) {
   const db = await initDB();
   return db.delete(PDF_STORE, pdfId);
 }
+

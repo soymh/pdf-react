@@ -435,12 +435,13 @@ function App() {
   };
 
   const clearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all PDFs and spaces? This action cannot be undone.')) {
-      await setWorkspaces([]);
-      await setActiveWorkspaceId(null);
-      localStorage.removeItem('pdfWorkspaces');
-      localStorage.removeItem('pdfLastActiveWorkspaceId');
-      showNotification('All data cleared', 'success');
+    if (window.confirm('Are you sure you want to clear ALL workspaces and their PDFs? This action cannot be undone.')) {
+      await db.deleteAllWorkspaces();
+      setWorkspaces([]);
+      setActiveWorkspaceId(null);
+      // No need to clear localStorage for workspaces now, as db.deleteAllWorkspaces handles the data itself
+      localStorage.removeItem('pdfLastActiveWorkspaceId'); // Still clear last active ID
+      showNotification('All workspaces and PDFs cleared!', 'success');
     }
   };
 
