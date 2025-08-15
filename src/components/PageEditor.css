@@ -482,6 +482,34 @@
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
 }
 
+.delete-handle {
+  position: absolute;
+  top: -35px; /* Aligned with other handles */
+  right: -35px; /* Positioned to the right */
+  width: 24px;
+  height: 24px;
+  background: rgba(220, 38, 127, 0.9); /* Red */
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  opacity: 1 !important;
+  z-index: 1000;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.delete-handle:hover {
+  background: rgba(239, 68, 68, 1); /* Brighter red on hover */
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(220, 38, 127, 0.5);
+}
+
 .layer-handle:hover {
   background: rgba(147, 51, 234, 0.9); /* Lighter purple on hover */
   transform: scale(1.1);
