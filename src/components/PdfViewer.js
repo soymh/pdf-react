@@ -5,7 +5,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
-  const [scale, setScale] = useState(1.5);
+  const [scale, setScale] = useState(1);
   useEffect(() => {
     const renderPage = async () => {
     const canvas = canvasRef.current;
@@ -119,41 +119,55 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
     const y = e.clientY - rect.top;
     setSelectionRect(prev => ({ ...prev, endX: x, endY: y }));
   };
+
   const handleMouseUp = async () => {
     if (!isSelecting || !selectionRect) return;
 
     const { startX, endX, startY, endY } = selectionRect;
-    const canvas = canvasRef.current;
+    const canvas = canvasRef.current; // The displayed canvas element (its CSS size)
 
+    // Calculate the selection rectangle in CSS pixels relative to the displayed canvas
     const rectX = Math.min(startX, endX);
     const rectY = Math.min(startY, endY);
     const rectWidth = Math.abs(endX - startX);
     const rectHeight = Math.abs(endY - startY);
 
-    if (rectWidth > 15 && rectHeight > 15) {
+    if (rectWidth > 15 && rectHeight > 15) { // Minimum size check for a valid selection
       try {
         const page = await pdfData.pdf.getPage(pdfData.currentPage);
-        const captureScale = 5.0;
-        const viewport = page.getViewport({ scale: captureScale });
 
+        // Define a fixed high-resolution scale for the temporary capture canvas
+        const captureScale = 5.0; 
+        const viewportForCapture = page.getViewport({ scale: captureScale });
+
+        // Create a temporary canvas for high-resolution rendering of the entire page
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = viewport.width;
-        tempCanvas.height = viewport.height;
+        tempCanvas.width = viewportForCapture.width;
+        tempCanvas.height = viewportForCapture.height;
         const tempCtx = tempCanvas.getContext('2d');
 
+        // Render the entire PDF page to the temporary canvas at the high capture resolution
         await page.render({
           canvasContext: tempCtx,
-          viewport: viewport,
+          viewport: viewportForCapture,
+          renderInteractiveForms: true
         }).promise;
 
-        const scaleX = tempCanvas.width / canvas.width;
-        const scaleY = tempCanvas.height / canvas.height;
+        // --- CRITICAL CORRECTION ---
+        // Calculate the scaling ratio from the CSS pixels of the displayed canvas
+        // to the actual pixels of the high-resolution temporary capture canvas.
+        // canvas.clientWidth and canvas.clientHeight give the rendered CSS dimensions.
+        const scaleRatioX = tempCanvas.width / canvas.clientWidth;
+        const scaleRatioY = tempCanvas.height / canvas.clientHeight;
 
-        const sourceX = rectX * scaleX;
-        const sourceY = rectY * scaleY;
-        const sourceWidth = rectWidth * scaleX;
-        const sourceHeight = rectHeight * scaleY;
+        // Apply this precise ratio to the selection rectangle coordinates (which are in CSS pixels)
+        // to get the source coordinates and dimensions on the high-resolution tempCanvas.
+        const sourceX = rectX * scaleRatioX;
+        const sourceY = rectY * scaleRatioY;
+        const sourceWidth = rectWidth * scaleRatioX;
+        const sourceHeight = rectHeight * scaleRatioY;
 
+        // Create the final canvas for the cropped capture image
         const captureCanvas = document.createElement('canvas');
         captureCanvas.width = sourceWidth;
         captureCanvas.height = sourceHeight;
@@ -162,14 +176,16 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
         captureCtx.imageSmoothingEnabled = true;
         captureCtx.imageSmoothingQuality = 'high';
 
+        // Draw the selected portion from the high-resolution temporary canvas
+        // to the final capture canvas, effectively cropping it.
         captureCtx.drawImage(
           tempCanvas,
-          sourceX, sourceY, sourceWidth, sourceHeight,
-          0, 0, sourceWidth, sourceHeight
-  );
+          sourceX, sourceY, sourceWidth, sourceHeight, // Source rectangle on tempCanvas
+          0, 0, sourceWidth, sourceHeight             // Destination rectangle on captureCanvas
+        );
 
-        // Get the final high-quality image data
-        const imageData = captureCanvas.toDataURL('image/png', 1.0); // Use PNG for quality
+        // Get the final high-quality image data (PNG for best quality)
+        const imageData = captureCanvas.toDataURL('image/png', 1.0);
         console.log('PdfViewer calling onCapture for PDF:', pdfData.name, pdfData.id);
         onCapture(imageData, pdfData);
       } catch (error) {
@@ -207,7 +223,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
     setScale(prev => Math.max(prev - 0.25, 0.5));
   };
   const handleResetZoom = () => {
-    setScale(1.5);
+    setScale(1);
   };
 
   return (
