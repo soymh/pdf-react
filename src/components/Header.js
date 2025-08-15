@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 
 
-function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMode }) {
+function Header({ onLoadClick, onCreateSpace, onCreateWorkspace, onClearAll, isZenMode }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const headerRef = useRef(null);
@@ -56,29 +56,10 @@ function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMo
     >
       <div className="logo">⚡ PDF WORKSPACE ⚡</div>
       <div className="controls">
-        <button className="cyber-button" onClick={onLoadClick}>
-          <span>📂 LOAD PDFs</span>
-        </button>
-        <button className="cyber-button" onClick={onCreateSpace}>
-          <span>🗂️ NEW SPACE</span>
-        </button>
-        <button className="cyber-button" onClick={onClearAll}>
-          <span>🗑️ CLEAR ALL</span>
-        </button>
-
-        <button className="cyber-button" onClick={toggleZenMode} title={isZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}>
-          <span>{isZenMode ? '😌 Exit Zen' : '🧘 Zen Mode'}</span>
-        </button>
-
-
-
-
-
-
-
-
-
-
+                <button className="cyber-button" onClick={onLoadClick}>📥 LOAD PDF</button>
+                <button className="cyber-button" onClick={onCreateSpace}>✨ NEW SPACE</button>
+                <button className="cyber-button" onClick={onCreateWorkspace}>➕ NEW WORKSPACE</button>
+                <button className="cyber-button" onClick={onClearAll}>🗑️ CLEAR ALL</button>
       </div>
     </div>
   );

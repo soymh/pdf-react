@@ -791,7 +791,6 @@ function App() {
           onCreateWorkspace={() => setIsWorkspaceModalOpen(true)}
           onClearAll={clearAll}
           isZenMode={isZenMode}
-          toggleZenMode={toggleZenMode}
         />
 
         <div className="main-content">
@@ -930,18 +929,26 @@ function App() {
           onClick={toggleZenMode}
           title="Exit Zen Mode (Esc)"
         >
-          ✖️ Exit Zen
+          ✖️ Exit
         </button>,
         document.body
       )}
 
-      {isZenMode && createPortal(
+      {createPortal(
         <button
-          className="zen-mode-toggle-single-pdf-button"
-          onClick={toggleSinglePdfZenMode}
-          title={isSinglePdfZenMode ? "Show all PDFs in Zen Mode" : "Show single PDF in Zen Mode"}
+          className="zen-mode-toggle-button"
+          onClick={() => {
+            if (isZenMode) {
+              // In Zen mode, toggle single/multi PDF view
+              toggleSinglePdfZenMode();
+            } else {
+              // Not in Zen mode, activate Zen mode
+              toggleZenMode();
+            }
+          }}
+          title={isZenMode ? (isSinglePdfZenMode ? "Show all PDFs in Zen Mode" : "Show single PDF in Zen Mode") : "Enter Zen Mode (Esc to exit)"}
         >
-          {isSinglePdfZenMode ? '📚 Multi-PDF View' : '📄 Single PDF View'}
+          {isZenMode ? (isSinglePdfZenMode ? '📚 Multi-PDF' : '📄 Single') : 'Zen Mode'}
         </button>,
         document.body
       )}
