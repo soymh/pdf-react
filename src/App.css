@@ -1218,3 +1218,45 @@ body.zen-mode .pdf-viewer:hover .pdf-controls {
 body.zen-mode .pdf-viewer .pdf-controls .pdf-nav-btn[title="Remove PDF"] {
     display: none;
 }
+
+/* NEW: Style for the Single/Multi-PDF Toggle Button in Zen Mode */
+.zen-mode-toggle-single-pdf-button {
+    position: fixed;
+    top: 20px;
+    left: 150px; /* Position to the right of the Exit Zen button */
+    background: rgba(83, 52, 131, 0.9); /* A different color to distinguish */
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10000; /* Same high z-index as Zen Exit button */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.zen-mode-toggle-single-pdf-button:hover {
+    background: rgba(110, 68, 170, 1); /* Brighter purple on hover */
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Ensure the existing zen-exit-button is positioned correctly */
+.zen-exit-button {
+    position: fixed;
+    top: 20px;
+    left: 20px; /* Keep its original position */
+    background: rgba(220, 38, 127, 0.9); /* Red */
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}

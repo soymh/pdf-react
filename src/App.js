@@ -49,6 +49,8 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [zoomedCapture, setZoomedCapture] = useState(null);
   const [isZenMode, setIsZenMode] = useState(false);
+  const [isSinglePdfZenMode, setIsSinglePdfZenMode] = useState(false);
+  const [activeSinglePdfIndex, setActiveSinglePdfIndex] = useState(0); 
   const loadedPdfIdsRef = useRef([]);
   const pdfCacheRef = useRef(new Map());
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
@@ -62,19 +64,46 @@ function App() {
     }, 3000);
   }, []);
 
-  const toggleZenMode = useCallback(() => setIsZenMode(prev => !prev), []);
+  const toggleZenMode = useCallback(() => {
+    setIsZenMode(prev => {
+      // When exiting Zen mode, also reset single PDF mode
+      if (prev) {
+        setIsSinglePdfZenMode(false);
+        setActiveSinglePdfIndex(0); // Reset to first PDF
+      }
+      return !prev;
+    });
+  }, []);
+
+  // NEW: Toggle for single PDF within Zen mode
+  const toggleSinglePdfZenMode = useCallback(() => {
+    setIsSinglePdfZenMode(prev => !prev);
+  }, []);
+
+  const handleSinglePdfChange = useCallback((pdfIndex) => {
+    if (pdfIndex >= 0 && pdfIndex < livePdfDocs.length) {
+      setActiveSinglePdfIndex(pdfIndex);
+    } else {
+      showNotification(`PDF number ${pdfIndex + 1} does not exist.`, 'warning');
+    }
+  }, [livePdfDocs, showNotification]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && isZenMode) {
         toggleZenMode();
       }
+      if (isZenMode && isSinglePdfZenMode && event.key >= '1' && event.key <= '9') {
+        const pdfNumber = parseInt(event.key, 10);
+        handleSinglePdfChange(pdfNumber - 1);
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isZenMode, toggleZenMode]);
+  }, [isZenMode, toggleZenMode, isSinglePdfZenMode, handleSinglePdfChange]);
+
   useEffect(() => {
     if (isZenMode) {
       document.body.classList.add('zen-mode');
@@ -85,6 +114,7 @@ function App() {
       document.body.classList.remove('zen-mode');
     };
   }, [isZenMode]);
+
   useEffect(() => {
     async function loadInitialData() {
       const allWorkspaces = await db.getAllWorkspaces();
@@ -528,6 +558,10 @@ function App() {
     showNotification('Capture deleted!', 'success');
   };
 
+  const pdfsToRender = isZenMode && isSinglePdfZenMode
+    ? (livePdfDocs.length > 0 ? [livePdfDocs[activeSinglePdfIndex]] : [])
+    : livePdfDocs;
+
   return (
     <>
       <div className="cyber-grid"></div>
@@ -548,16 +582,18 @@ function App() {
           onClearAll={clearAll}
           isZenMode={isZenMode}
           toggleZenMode={toggleZenMode}
+          // REMOVED: isSinglePdfZenMode={isSinglePdfZenMode}
+          // REMOVED: toggleSinglePdfZenMode={toggleSinglePdfZenMode}
         />
 
         <div className="main-content">
           <div
-            className="pdf-viewers"
+            className={`pdf-viewers ${isSinglePdfZenMode ? 'single-pdf-zen-mode' : ''}`}
             id="pdfViewers"
-            style={{ '--pdf-count': livePdfDocs.length || 1 }}
+            style={{ '--pdf-count': pdfsToRender.length || 1 }}
           >
-            {livePdfDocs.length > 0 ? (
-              livePdfDocs.map((doc, index) => (
+            {pdfsToRender.length > 0 ? (
+              pdfsToRender.map((doc, index) => (
                 <PdfViewer
                   key={doc.id}
                   pdfData={doc}
@@ -567,12 +603,18 @@ function App() {
                   onCapture={handleCapture}
                   onZoomCapture={handleZoomCapture}
                   isZenMode={isZenMode}
+                  isSinglePdfZenMode={isSinglePdfZenMode}
                 />
               ))
             ) : (
               <div className="empty-state">
                 <h3>🌌 READY FOR DIGITAL EXPLORATION</h3>
-                <p>{activeWorkspace ? 'Load your PDFs to begin.' : 'Create or select a workspace.'}</p>
+                <p>{activeWorkspace ? (isZenMode && isSinglePdfZenMode ? 'Load PDFs to view in single mode.' : 'Load your PDFs to begin.') : 'Create or select a workspace.'}</p>
+              </div>
+            )}
+            {isZenMode && isSinglePdfZenMode && livePdfDocs.length > 1 && (
+              <div className="pdf-number-indicator">
+                {activeSinglePdfIndex + 1} / {livePdfDocs.length}
               </div>
             )}
           </div>
@@ -672,6 +714,18 @@ function App() {
           title="Exit Zen Mode (Esc)"
         >
           ✖️ Exit Zen
+        </button>,
+        document.body
+      )}
+
+      {/* NEW: Single/Multi-PDF Toggle Button in Zen Mode */}
+      {isZenMode && createPortal(
+        <button
+          className="zen-mode-toggle-single-pdf-button" // New class for styling
+          onClick={toggleSinglePdfZenMode}
+          title={isSinglePdfZenMode ? "Show all PDFs in Zen Mode" : "Show single PDF in Zen Mode"}
+        >
+          {isSinglePdfZenMode ? '📚 Multi-PDF View' : '📄 Single PDF View'}
         </button>,
         document.body
       )}

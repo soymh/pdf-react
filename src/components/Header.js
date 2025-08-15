@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMode }) { // NEW: isZenMode and toggleZenMode props
+
+
+function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMode }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const headerRef = useRef(null);
   const expandTimeoutRef = useRef(null);
 
-  // Handle header expansion/collapse
+
   const handleMouseEnter = () => {
     if (!isDragging) {
       clearTimeout(expandTimeoutRef.current);
@@ -18,11 +20,12 @@ function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMo
     if (!isDragging) {
       expandTimeoutRef.current = setTimeout(() => {
         setIsExpanded(false);
-      }, 300); // Small delay to prevent flickering
+
+      }, 300);
     }
   };
 
-  // Global drag event listeners (similar to SpacesPanel)
+
   useEffect(() => {
     const handleDragStart = (e) => {
       setIsDragging(true);
@@ -33,7 +36,7 @@ function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMo
       setIsDragging(false);
     };
 
-    // Listen to global drag events
+
     document.addEventListener('dragstart', handleDragStart);
     document.addEventListener('dragend', handleDragEnd);
 
@@ -62,10 +65,20 @@ function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMo
         <button className="cyber-button" onClick={onClearAll}>
           <span>🗑️ CLEAR ALL</span>
         </button>
-        {/* NEW: Zen Mode Toggle Button */}
+
         <button className="cyber-button" onClick={toggleZenMode} title={isZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}>
           <span>{isZenMode ? '😌 Exit Zen' : '🧘 Zen Mode'}</span>
         </button>
+
+
+
+
+
+
+
+
+
+
       </div>
     </div>
   );
