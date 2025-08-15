@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -20,13 +22,47 @@
         }
 
         body {
-            font-family: 'Courier New', monospace;
+            font-family: 'Rajdhani', sans-serif; /* Changed from 'Inter' */
             background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
             color: #e0e6ff;
             overflow: hidden;
             height: 100vh;
         }
-        
+
+        /* Apply Oxanium to headers and prominent display text */
+        .workspaces-header,
+        .spaces-header,
+        .modal h3,
+        .logo, /* This targets the header logo text */
+        .pdf-title,
+        .empty-state h3 {
+            font-family: 'Oxanium', sans-serif;
+            font-weight: 700; /* Use a bold weight for impact */
+        }
+
+        /* Apply Fira Code to inputs for a clean, code-like aesthetic */
+        .workspace-rename-input,
+        .modal input {
+            font-family: 'Fira Code', monospace; /* Changed from 'Inter' */
+        }
+
+        /* Ensure cyber-buttons and other UI text also use Rajdhani */
+        .cyber-button,
+        .pdf-nav-btn,
+        .zen-mode-toggle-button, /* The new circular button */
+        .notification,
+        .empty-state p {
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        /* The .workspace-name-display should also inherit Rajdhani from body,
+        but you can explicitly set it if needed for consistency. */
+        .workspace-name-display {
+            font-family: 'Rajdhani', sans-serif;
+            /* ... existing styles ... */
+        }
+
+
         body:has(.workspaces-panel:hover) .container {
             padding-left: 250px;
         }
@@ -80,6 +116,12 @@
             transform: translateY(calc(-100% + 25px));
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             cursor: pointer;
+            
+            /* Ensure header is a relative positioning context for its children */
+            display: flex; /* Make the header a flex container to align logo */
+            align-items: center; /* Vertically center logo and controls */
+            justify-content: flex-start; /* Keep logo at the start */
+            height: 70px; /* Give header a defined height */
         }
 
         /* Expanded state */
@@ -100,16 +142,15 @@
             font-weight: bold;
             text-shadow: 0 0 20px #9333ea;
             color: #e0e6ff;
-            margin-bottom: 10px;
-            /* Add positioning for collapsed state */
+            
+            /* Ensure logo stays on the left */
             position: absolute;
-            left: 50%;
-            top: 2px;
-            transform: translateX(-50%);
+            left: 15px; /* Aligned with header padding */
+            top: 80%;
+            transform: translateY(-50%);
             transition: opacity 0.3s ease;
             opacity: 1;
-            margin-bottom: 0;
-            font-size: 14px;
+            font-size: 14px; /* Default size for collapsed */
         }
 
         /* Hide logo when expanded, show controls */
@@ -120,9 +161,15 @@
 
         .header .controls {
             display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
+            gap: 15px; /* Spacing between buttons */
+            align-items: center; /* Vertically align buttons */
+            flex-wrap: nowrap; /* Prevent wrapping to a new line */
+            
+            /* Positioning for centering, slightly to the left */
+            position: absolute; /* Take out of normal flow */
+            left: 50%; /* Start at the horizontal center of the parent */
+            transform: translateX(calc(-50% - 60px)); /* Pull back by half its width, then an additional 60px to the left */
+            
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -161,6 +208,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            border-radius: 12px;
         }
 
         .cyber-button:hover {
@@ -307,6 +355,7 @@
         justify-content: center;
         opacity: 0; /* Hidden by default */
         transition: opacity 0.2s ease-in-out;
+        border-radius: 50%;
         /* position: absolute; 
         /* right: 5px; */
         /* top: 50%; */
@@ -351,7 +400,7 @@
             width: calc(100% - 30px); /* Adjust width to account for panel padding */
             margin: 0 15px 10px 15px; /* Add margin for spacing and align with panel padding */
             padding: 15px;
-            border-radius: 8px;
+            border-radius: 12px;
             background: rgba(22, 33, 62, 0.7); /* Same as workspace-tab */
             border: 1px solid rgba(147, 51, 234, 0.3); /* Same as workspace-tab */
             color: #e0e6ff; /* Same as workspace-tab */
@@ -499,9 +548,9 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: bold;
-            border-radius: 6px;
             transition: all 0.3s ease;
             min-width: 35px;
+            border-radius: 12px;
         }
 
         .pdf-nav-btn:hover {
@@ -889,6 +938,7 @@
             cursor: pointer;
             font-size: 10px;
             transition: all 0.3s ease;
+            border-radius: 8px; 
         }
 
         .space-btn:hover {
@@ -983,6 +1033,10 @@
             gap: 15px;
             justify-content: center;
         }
+
+        .modal-actions button {
+            border-radius: 12px; 
+        }        
 
         .glow {
             animation: glow 2s ease-in-out infinite alternate;
@@ -1134,6 +1188,7 @@
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
+    border-radius: 12px;
     }
 
     .add-page-btn:hover {
