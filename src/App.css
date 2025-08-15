@@ -1068,3 +1068,100 @@
 body.dragging .header {
     transform: translateY(0) !important;
 }
+
+/* NEW: Zen Mode Styles */
+body.zen-mode {
+    background: #000; /* Darken main UI background */
+}
+
+body.zen-mode .workspaces-panel {
+    display: none; /* Workspaces left sidebar minimized (gone) */
+}
+
+body.zen-mode .header {
+    display: none; /* Top bar (header) minimized (gone) */
+}
+
+body.zen-mode .container {
+    padding-left: 0; /* Remove left padding */
+    padding-top: 0; /* Remove top padding */
+    padding-right: 30px; /* Keep space for the collapsed spaces panel */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body.zen-mode .main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    padding: 0; /* Remove any padding within main-content */
+}
+
+body.zen-mode .pdf-viewers {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    overflow-x: auto;
+    background: transparent;
+    align-items: center;
+    justify-content: center;
+    padding-right: 0; /* No right padding in zen mode, handled by container */
+}
+
+body.zen-mode .pdf-viewer {
+    flex-shrink: 0;
+    flex-grow: 1;
+    width: calc(50% - 5px);
+    height: calc(100vh - 20px);
+    max-width: none;
+    min-width: unset;
+    border: 2px solid rgba(147, 51, 234, 0.6);
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+}
+
+/* Spaces sidebar remains hoverable in zen mode - remove the !important transform */
+body.zen-mode .spaces-panel {
+    /* REMOVED: transform: translateX(0) !important; */
+    pointer-events: auto; /* Ensure it's clickable */
+    z-index: 50; /* Ensure it's on top */
+    background: rgba(15, 52, 96, 0.98); /* Slightly more opaque */
+    box-shadow: -15px 0 50px rgba(0, 0, 0, 0.7); /* Stronger shadow */
+}
+
+/* Ensure the hover effect still works in zen mode */
+body.zen-mode .spaces-panel:hover,
+body.zen-mode .spaces-panel.expanded {
+    transform: translateX(0); /* This original rule should now take effect on hover */
+}
+
+/* NEW: Ensure the header and workspaces panel are fully hidden, not just translated */
+body.zen-mode .workspaces-panel,
+body.zen-mode .header {
+    left: -100vw; /* Move off-screen to the left */
+    /* Or display: none; */
+}
+.zen-exit-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(220, 38, 127, 0.9); /* Red */
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 8px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 10000; /* Ensure it's on top of everything */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: all 0.2s ease;
+}
+
+.zen-exit-button:hover {
+    background: rgba(239, 68, 68, 1); /* Brighter red on hover */
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}

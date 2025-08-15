@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function Header({ onLoadClick, onCreateSpace, onClearAll }) {
+function Header({ onLoadClick, onCreateSpace, onClearAll, isZenMode, toggleZenMode }) { // NEW: isZenMode and toggleZenMode props
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const headerRef = useRef(null);
@@ -61,6 +61,10 @@ function Header({ onLoadClick, onCreateSpace, onClearAll }) {
         </button>
         <button className="cyber-button" onClick={onClearAll}>
           <span>🗑️ CLEAR ALL</span>
+        </button>
+        {/* NEW: Zen Mode Toggle Button */}
+        <button className="cyber-button" onClick={toggleZenMode} title={isZenMode ? "Exit Zen Mode" : "Enter Zen Mode"}>
+          <span>{isZenMode ? '😌 Exit Zen' : '🧘 Zen Mode'}</span>
         </button>
       </div>
     </div>

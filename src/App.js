@@ -48,6 +48,7 @@ function App() {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [zoomedCapture, setZoomedCapture] = useState(null);
+  const [isZenMode, setIsZenMode] = useState(false);
   const loadedPdfIdsRef = useRef([]);
   const pdfCacheRef = useRef(new Map());
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
@@ -61,6 +62,29 @@ function App() {
     }, 3000);
   }, []);
 
+  const toggleZenMode = useCallback(() => setIsZenMode(prev => !prev), []);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && isZenMode) {
+        toggleZenMode();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isZenMode, toggleZenMode]);
+  useEffect(() => {
+    if (isZenMode) {
+      document.body.classList.add('zen-mode');
+    } else {
+      document.body.classList.remove('zen-mode');
+    }
+    return () => {
+      document.body.classList.remove('zen-mode');
+    };
+  }, [isZenMode]);
   useEffect(() => {
     async function loadInitialData() {
       const allWorkspaces = await db.getAllWorkspaces();
@@ -95,17 +119,15 @@ function App() {
     const currentPdfIds = currentPdfInfos.map(doc => doc.id).sort();
     const previousPdfIds = loadedPdfIdsRef.current.sort();
 
-    // Clean up PDFs no longer in the active workspace *before* loading new ones
-      const pdfsToKeepIds = new Set(currentPdfIds);
-      pdfCacheRef.current.forEach((pdf, id) => {
-        if (!pdfsToKeepIds.has(id)) {
-          try { pdf.destroy(); } catch (e) { console.warn("Error destroying removed PDF:", e); }
-          pdfCacheRef.current.delete(id);
-        }
-      });
+    const pdfsToKeepIds = new Set(currentPdfIds);
+    pdfCacheRef.current.forEach((pdf, id) => {
+      if (!pdfsToKeepIds.has(id)) {
+        try { pdf.destroy(); } catch (e) { console.warn("Error destroying removed PDF:", e); }
+        pdfCacheRef.current.delete(id);
+      }
+    });
 
     const loadOrUpdatePdfObjects = async () => {
-      // Only show notification if there's a significant change in the list of PDFs
       const pdfListChanged =
         currentPdfIds.length !== previousPdfIds.length ||
         currentPdfIds.some((id, index) => id !== previousPdfIds[index]);
@@ -118,12 +140,12 @@ function App() {
         currentPdfInfos.map(async (docInfo) => {
           let pdf = pdfCacheRef.current.get(docInfo.id);
 
-          if (!pdf) { // Only load PDF from DB if not in cache
+          if (!pdf) {
             const pdfRecord = await db.getPdf(docInfo.id);
             if (pdfRecord) {
           try {
                 pdf = await getDocument(pdfRecord.data).promise;
-                pdfCacheRef.current.set(docInfo.id, pdf); // Cache the new PDF object
+                pdfCacheRef.current.set(docInfo.id, pdf);
     } catch (error) {
                 showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
                 return null;
@@ -132,7 +154,6 @@ function App() {
           }
 
           if (pdf) {
-            // Always take currentPage from docInfo, which reflects activeWorkspace state
             const currentPage = docInfo.currentPage || 1;
             return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages };
           }
@@ -141,8 +162,8 @@ function App() {
   );
 
       setLivePdfDocs(loadedPdfs.filter(Boolean));
-      loadedPdfIdsRef.current = currentPdfIds; // Update ref with the new set of IDs
-    };
+      loadedPdfIdsRef.current = currentPdfIds;
+  };
 
     loadOrUpdatePdfObjects();
   }, [activeWorkspace, showNotification]);
@@ -154,7 +175,6 @@ function App() {
 
     return () => clearTimeout(notificationId);
   }, [showNotification]);
-
   const handleCreateWorkspace = async (name) => {
     const newWorkspace = { id: Date.now(), name, pdfDocuments: [], spaces: [], activeSpaceId: null };
     await db.saveWorkspace(newWorkspace);
@@ -170,9 +190,9 @@ function App() {
   };
   
   const updateWorkspace = async (updater) => {
-      const updatedWorkspace = updater(activeWorkspace);
-      await db.saveWorkspace(updatedWorkspace);
-      setWorkspaces(prev => prev.map(w => w.id === activeWorkspaceId ? updatedWorkspace : w));
+    const updatedWorkspace = updater(activeWorkspace);
+    await db.saveWorkspace(updatedWorkspace);
+    setWorkspaces(prev => prev.map(w => w.id === activeWorkspaceId ? updatedWorkspace : w));
   };
 
   const handleZoomCapture = useCallback((capture) => {
@@ -217,14 +237,12 @@ function App() {
   };
 
   const updatePdfPage = async (pdfId, newPage) => {
-    // Update livePdfDocs immediately for responsiveness
     setLivePdfDocs(docs =>
       docs.map(doc =>
         doc.id === pdfId ? { ...doc, currentPage: newPage } : doc
       )
     );
 
-    // Also update the activeWorkspace to persist the current page
     await updateWorkspace(w => ({
       ...w,
       pdfDocuments: w.pdfDocuments.map(doc =>
@@ -257,15 +275,13 @@ function App() {
           let updatedPages = space.pages || [];
 
           if (updatedPages.length > 0) {
-            // Add the new capture to the last page of the space
             const lastPageIndex = updatedPages.length - 1;
             updatedPages = updatedPages.map((page, index) =>
               index === lastPageIndex
-                  ? { ...page, captures: [...page.captures, newCapture] }
-                  : page
-            );
-            } else {
-            // If no pages exist, create the first page and add the capture
+                ? { ...page, captures: [...page.captures, newCapture] }
+                : page
+  );
+          } else {
             updatedPages = [{ id: Date.now(), captures: [newCapture] }];
           }
           return { ...space, pages: updatedPages };
@@ -305,7 +321,6 @@ function App() {
   
   const exportSpaceAsPdf = async (spaceId) => {
     try {
-      // Find the space by ID
       const space = spaces.find(s => s.id === spaceId);
       if (!space || !Array.isArray(space.pages)) {
         throw new Error('Invalid space or missing pages');
@@ -317,7 +332,6 @@ function App() {
       let currentPage = 0;
       let hasContent = false;
 
-      // Filter out empty pages first
       const pagesWithCaptures = space.pages.filter(page => 
         Array.isArray(page.captures) && page.captures.length > 0
       );
@@ -326,29 +340,26 @@ function App() {
         throw new Error('No content to export - space is empty');
       }
 
-      // Process each page in sequence
       for (const page of pagesWithCaptures) {
         if (!page.renderedImage) {
           console.warn(`Page ${page.id} has no rendered image. Skipping.`);
           continue;
         }
 
-        // Add a new page for each page except the first
         if (currentPage > 0) {
           pdf.addPage();
         }
 
       const img = new Image();
         img.src = page.renderedImage;
-      
-      try {
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-            setTimeout(reject, 10000); // Increased timeout for large images
-        });
 
-          // Calculate dimensions to fit A4 page with a small margin
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            setTimeout(reject, 10000);
+          });
+
           const imgWidth = img.naturalWidth;
           const imgHeight = img.naturalHeight;
 
@@ -376,14 +387,13 @@ function App() {
           console.error('Error adding rendered image to PDF:', err);
           showNotification('error', `Failed to add page image: ${err.message}`, 'error');
         continue;
+        }
       }
-    }
 
       if (!hasContent) {
         throw new Error('No valid content found to export after processing rendered images.');
       }
 
-      // Save with a unique filename including timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `${space.name}_${timestamp}.pdf`;
       pdf.save(filename);
@@ -393,14 +403,6 @@ function App() {
       showNotification('error', `Export Error: ${error.message}`);
     }
   };
-
-  // const layoutCapturesOnPdfPage = async (pdf, captures) => {
-  //   // This function is no longer needed if we're using pre-rendered images
-  //   // However, keeping it for now in case there's other logic that relies on it.
-  //   // It will not be called for pages with renderedImage.
-  //   console.warn('layoutCapturesOnPdfPage was called, but should be superseded by renderedImage.');
-  //   return false;
-  // };
 
   const clearAll = async () => {
     if (window.confirm('Are you sure you want to clear all PDFs and spaces? This action cannot be undone.')) {
@@ -447,10 +449,8 @@ function App() {
         if (space.id === spaceId) {
           let newPages;
           if (Array.isArray(pagesToUpdate)) {
-            // If it's an array, replace all pages with this new array
             newPages = pagesToUpdate;
           } else {
-            // If it's a single page, update that specific page by ID
             newPages = space.pages.map(page =>
               page.id === pagesToUpdate.id ? pagesToUpdate : page
             );
@@ -468,17 +468,14 @@ function App() {
       spaces: w.spaces.map(space => {
         if (space.id === spaceId) {
           let captureToMove = null;
-          // First, find the capture and remove it from the source page
-          // Convert p.id to string for comparison
+
           const sourcePage = space.pages.find(p => p.id.toString() === fromPageId);
           if (sourcePage) {
-            // Convert c.id to string for comparison
             captureToMove = sourcePage.captures.find(c => c.id.toString() === captureId);
           }
 
           if (!captureToMove) {
             console.error("Capture to move not found!");
-            // Log additional debug info here
             console.error("Debug Info - moveCaptureBetweenPages:");
             console.error("  spaceId:", spaceId);
             console.error("  captureId (from DOM):", captureId);
@@ -486,18 +483,16 @@ function App() {
             console.error("  toPageId (from DOM):", toPageId);
             console.error("  sourcePage found:", !!sourcePage);
             if (sourcePage) {
-                console.error("  sourcePage.id (in state):", sourcePage.id);
-                console.error("  sourcePage.captures IDs (in state):", sourcePage.captures.map(c => c.id));
+              console.error("  sourcePage.id (in state):", sourcePage.id);
+              console.error("  sourcePage.captures IDs (in state):", sourcePage.captures.map(c => c.id));
             }
-            return space; // Return original state if capture not found
+            return space;
           }
 
           const newPages = space.pages.map(page => {
-            // Remove from the original page - compare page.id as string
             if (page.id.toString() === fromPageId) {
               return { ...page, captures: page.captures.filter(c => c.id.toString() !== captureId) };
             }
-            // Add to the new page at the correct index - compare page.id as string
             else if (page.id.toString() === toPageId) {
               const newCaptures = [...page.captures];
               newCaptures.splice(newIndex, 0, captureToMove);
@@ -542,6 +537,7 @@ function App() {
         activeWorkspaceId={activeWorkspaceId}
         onSetActive={handleSetActiveWorkspace}
         onCreate={() => setIsWorkspaceModalOpen(true)}
+        isZenMode={isZenMode}
       />
 
       <div className="container">
@@ -550,6 +546,8 @@ function App() {
           onCreateSpace={() => activeWorkspaceId && setIsSpaceModalOpen(true)}
           onCreateWorkspace={() => setIsWorkspaceModalOpen(true)}
           onClearAll={clearAll}
+          isZenMode={isZenMode}
+          toggleZenMode={toggleZenMode}
         />
 
         <div className="main-content">
@@ -568,6 +566,7 @@ function App() {
                   onPageChange={updatePdfPage}
                   onCapture={handleCapture}
                   onZoomCapture={handleZoomCapture}
+                  isZenMode={isZenMode}
                 />
               ))
             ) : (
@@ -593,6 +592,7 @@ function App() {
             onCloseZoom={handleCloseZoom}
             showNotification={showNotification}
             onDeleteCapture={deleteCaptureFromSpacePage}
+            isZenMode={isZenMode}
           />
         </div>
       </div>
@@ -662,6 +662,17 @@ function App() {
             From: {zoomedCapture.source} | Page: {zoomedCapture.page} | Click outside to close
           </div>
         </div>,
+        document.body
+      )}
+
+      {isZenMode && createPortal(
+        <button
+          className="zen-exit-button"
+          onClick={toggleZenMode}
+          title="Exit Zen Mode (Esc)"
+        >
+          ✖️ Exit Zen
+        </button>,
         document.body
       )}
 
