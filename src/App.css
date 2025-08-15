@@ -240,6 +240,36 @@
         box-shadow: 0 0 20px rgba(147, 51, 234, 0.7);
         }
 
+        /* Add new styles for the action buttons to mimic workspace-tab */
+        .workspace-action-btn {
+            width: calc(100% - 30px); /* Adjust width to account for panel padding */
+            margin: 0 15px 10px 15px; /* Add margin for spacing and align with panel padding */
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(22, 33, 62, 0.7); /* Same as workspace-tab */
+            border: 1px solid rgba(147, 51, 234, 0.3); /* Same as workspace-tab */
+            color: #e0e6ff; /* Same as workspace-tab */
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px; /* Same as workspace-tab */
+            text-align: left; /* Align text to left */
+            transition: all 0.3s ease;
+            box-shadow: none; /* Remove cyber-button shadow if inherited */
+        }
+
+        .workspace-action-btn:hover {
+            background: rgba(83, 52, 131, 0.6); /* Same as workspace-tab hover */
+            border-color: #9333ea; /* Same as workspace-tab hover */
+            transform: translateX(5px); /* Same as workspace-tab hover */
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.4); /* Add subtle shadow on hover */
+        }
+
+        .workspace-action-btn span {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between icon and text */
+        }
+
         .new-workspace-btn {
         margin-top: 15px;
         width: 100%;

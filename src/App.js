@@ -562,6 +562,177 @@ function App() {
     ? (livePdfDocs.length > 0 ? [livePdfDocs[activeSinglePdfIndex]] : [])
     : livePdfDocs;
 
+  const handleExportWorkspace = async () => {
+    if (!activeWorkspace) {
+      showNotification('No active workspace to export.', 'warning');
+      return;
+    }
+
+    try {
+      showNotification('Preparing workspace for export...', 'info');
+
+      // Create a deep copy to modify for export, if needed, but primarily to add binaries
+      const workspaceToExport = JSON.parse(JSON.stringify(activeWorkspace)); // Deep copy to avoid modifying live state
+
+      // --- Fetch PDF binaries and embed them for export ---
+      const pdfsWithBinaries = await Promise.all(
+        workspaceToExport.pdfDocuments.map(async (docInfo) => {
+          const pdfRecord = await db.getPdf(docInfo.id);
+          if (pdfRecord && pdfRecord.data) {
+            // Convert ArrayBuffer to Base64 string for JSON serialization
+            const base64Pdf = btoa(
+              new Uint8Array(pdfRecord.data)
+                .reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            return {
+              ...docInfo,
+              data: base64Pdf, // Embed the base64 PDF binary
+              currentPage: docInfo.currentPage // Ensure current page is included (already there)
+            };
+          }
+          return docInfo; // Return original info if binary not found (though it should be)
+        })
+      );
+      workspaceToExport.pdfDocuments = pdfsWithBinaries;
+
+      // Captured sections (imageData as Data URLs) are already part of spaces.pages.captures
+      // and will be serialized correctly by JSON.stringify.
+
+      const filename = `${workspaceToExport.name.replace(/\s/g, '_')}_full_export.json`;
+      const json = JSON.stringify(workspaceToExport, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const href = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(href);
+      showNotification(`Workspace "${workspaceToExport.name}" exported successfully (full data)!`, 'success');
+    } catch (error) {
+      console.error('Error exporting workspace:', error);
+      showNotification(`Failed to export workspace: ${error.message}`, 'error');
+    }
+  };
+
+  const handleImportWorkspace = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+
+        // Basic validation for full export format
+        if (!importedData || !importedData.id || !importedData.name || !Array.isArray(importedData.pdfDocuments) || !Array.isArray(importedData.spaces)) {
+          showNotification('Invalid workspace file format. Missing essential data.', 'error');
+          return;
+        }
+
+        // --- Handle PDF binaries from import ---
+        const newPdfDocsForDb = [];
+        const newPdfDocumentsMetadata = []; // Metadata to store in workspace object
+        const oldToNewPdfIdMap = new Map(); // Map original PDF IDs to new ones
+
+        for (const docInfo of importedData.pdfDocuments) {
+            if (docInfo.data) { // If binary data is present
+                // Convert Base64 string back to ArrayBuffer
+                const binaryString = atob(docInfo.data);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const newPdfId = Date.now() + Math.random(); // Generate new ID for imported PDF
+                newPdfDocsForDb.push({ id: newPdfId, data: bytes.buffer });
+                oldToNewPdfIdMap.set(docInfo.id, newPdfId); // Store mapping
+
+                // Create new metadata for the workspace (without the binary data)
+                newPdfDocumentsMetadata.push({
+                    id: newPdfId,
+                    name: docInfo.name,
+                    currentPage: docInfo.currentPage || 1 // Keep current page
+                });
+            } else {
+                // If no binary data, treat as a broken reference or older export, generate new ID
+                const newPdfId = Date.now() + Math.random();
+                oldToNewPdfIdMap.set(docInfo.id, newPdfId);
+                newPdfDocumentsMetadata.push({
+                    id: newPdfId,
+                    name: docInfo.name,
+                    currentPage: docInfo.currentPage || 1
+                });
+                showNotification(`PDF "${docInfo.name}" had no binary data. Re-import PDF if needed.`, 'warning');
+            }
+        }
+
+        // Store PDF binaries in IndexedDB
+        for (const pdfDoc of newPdfDocsForDb) {
+            await db.savePdf(pdfDoc);
+        }
+
+        // Assign new unique IDs to workspace, spaces, pages, and captures
+        // and update PDF references in captures
+        let newWorkspace = { ...importedData };
+        // Assign a new unique ID for the workspace itself to prevent conflicts
+        newWorkspace.id = Date.now() + Math.random(); 
+        newWorkspace.name = `${importedData.name} (Imported)`; // Rename imported workspace
+        
+        // Use the newly prepared PDF metadata
+        newWorkspace.pdfDocuments = newPdfDocumentsMetadata;
+
+        // Recursively update IDs for spaces, pages, and captures
+        const generateNewId = () => Date.now() + Math.random();
+        newWorkspace.spaces = newWorkspace.spaces.map(space => ({
+            ...space,
+            id: generateNewId(),
+            pages: space.pages.map(page => ({
+                ...page,
+                id: generateNewId(),
+                captures: page.captures.map(capture => ({
+                    ...capture,
+                    id: generateNewId(),
+                    // Update sourcePdfId if it was remapped during PDF binary import
+                    sourcePdfId: oldToNewPdfIdMap.has(capture.sourcePdfId) ? oldToNewPdfIdMap.get(capture.sourcePdfId) : capture.sourcePdfId
+                }))
+            }))
+        }));
+
+        // If the imported workspace had an active space, find its new ID based on remapping
+        if (importedData.activeSpaceId) {
+            // Find the old space in the original importedData
+            const oldSpace = importedData.spaces.find(s => s.id === importedData.activeSpaceId);
+            if (oldSpace) {
+                // Find the new space corresponding to the old one (assuming order is preserved after map)
+                const newCorrespondingSpace = newWorkspace.spaces.find(s => s.name === oldSpace.name && s.created === oldSpace.created); // Crude match, better to use an ID map
+                if (newCorrespondingSpace) {
+                    newWorkspace.activeSpaceId = newCorrespondingSpace.id;
+                } else {
+                    newWorkspace.activeSpaceId = null; // Couldn't find, reset
+                }
+            } else {
+                newWorkspace.activeSpaceId = null;
+            }
+        }
+
+
+        // Save the new workspace
+        await db.saveWorkspace(newWorkspace);
+        setWorkspaces(prev => [...prev, newWorkspace]);
+        setActiveWorkspaceId(newWorkspace.id); // Set the newly imported workspace as active
+        showNotification(`Workspace "${newWorkspace.name}" imported successfully!`, 'success');
+
+      } catch (error) {
+        console.error('Error importing workspace:', error);
+        showNotification(`Failed to import workspace: ${error.message}`, 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <>
       <div className="cyber-grid"></div>
@@ -572,6 +743,8 @@ function App() {
         onSetActive={handleSetActiveWorkspace}
         onCreate={() => setIsWorkspaceModalOpen(true)}
         isZenMode={isZenMode}
+        onExport={handleExportWorkspace}
+        onImport={() => document.getElementById('importWorkspaceInput').click()}
       />
 
       <div className="container">
@@ -582,8 +755,6 @@ function App() {
           onClearAll={clearAll}
           isZenMode={isZenMode}
           toggleZenMode={toggleZenMode}
-          // REMOVED: isSinglePdfZenMode={isSinglePdfZenMode}
-          // REMOVED: toggleSinglePdfZenMode={toggleSinglePdfZenMode}
         />
 
         <div className="main-content">
@@ -647,6 +818,15 @@ function App() {
         accept=".pdf"
         onChange={handleFileSelect}
         disabled={!activeWorkspaceId}
+      />
+
+      {/* NEW: Hidden input for importing workspace file */}
+      <input
+        type="file"
+        id="importWorkspaceInput"
+        className="file-input"
+        accept=".json"
+        onChange={handleImportWorkspace}
       />
 
       {isSpaceModalOpen && (
@@ -718,10 +898,9 @@ function App() {
         document.body
       )}
 
-      {/* NEW: Single/Multi-PDF Toggle Button in Zen Mode */}
       {isZenMode && createPortal(
         <button
-          className="zen-mode-toggle-single-pdf-button" // New class for styling
+          className="zen-mode-toggle-single-pdf-button"
           onClick={toggleSinglePdfZenMode}
           title={isSinglePdfZenMode ? "Show all PDFs in Zen Mode" : "Show single PDF in Zen Mode"}
         >
@@ -740,4 +919,3 @@ function App() {
 }
 
 export default App;
-
