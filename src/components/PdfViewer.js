@@ -1,21 +1,20 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
-function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
+function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMode }) {
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
-  const [scale, setScale] = useState(1.5); // Increased default scale for better readability
-  
+  const [scale, setScale] = useState(1.5);
   useEffect(() => {
     const renderPage = async () => {
-      if (!pdfData.pdf) {
-        console.log(`PdfViewer ${pdfData.id}: No PDF object, skipping render.`);
+    const canvas = canvasRef.current;
+      if (!pdfData.pdf || !canvas) {
+        console.log(`PdfViewer ${pdfData.id}: Missing PDF object or canvas, skipping render.`);
         return;
       }
-
-      // Log detailed state just before attempting to render
-      console.log(`PdfViewer ${pdfData.id}: Render attempt - Page: ${pdfData.currentPage}, Total: ${pdfData.totalPages}, Is Destroyed: ${pdfData.pdf.isDestroyed}`);
+    
+      console.log(`PdfViewer ${pdfData.id}: Render attempt - Page: ${pdfData.currentPage}, Total: ${pdfData.totalPages}`);
 
       if (pdfData.pdf.isDestroyed) {
         console.warn(`PdfViewer ${pdfData.id}: Attempted to render a destroyed PDF, skipping.`);
@@ -23,7 +22,6 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
       }
 
       try {
-        // Cancel any ongoing render operation
         if (renderTaskRef.current) {
           try {
             renderTaskRef.current.cancel();
@@ -32,57 +30,65 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
           }
           renderTaskRef.current = null;
         }
-        
+
         const page = await pdfData.pdf.getPage(pdfData.currentPage);
-        
-        // Create a completely new canvas for this render operation
-        const newCanvas = document.createElement('canvas');
-        const context = newCanvas.getContext('2d');
-        
-        // Calculate optimal scale based on container width
-        const container = canvasRef.current?.parentElement;
-        const containerWidth = container ? container.clientWidth - 40 : 400;
+        const context = canvas.getContext('2d');
+
+        const outputScale = window.devicePixelRatio || 1;
+
         const viewport = page.getViewport({ scale: 1 });
-        const optimalScale = Math.min(scale, containerWidth / viewport.width);
-        
-        const scaledViewport = page.getViewport({ scale: optimalScale });
-        newCanvas.height = scaledViewport.height;
-        newCanvas.width = scaledViewport.width;
-        
-        // Store the render task and wait for it to complete
-        renderTaskRef.current = page.render({ 
-          canvasContext: context, 
-          viewport: scaledViewport,
+
+        const container = canvas.parentElement;
+        const desiredDisplayWidth = container ? (container.clientWidth - (parseFloat(getComputedStyle(container).paddingLeft) || 0) - (parseFloat(getComputedStyle(container).paddingRight) || 0)) : viewport.width;
+        const desiredDisplayHeight = container ? (container.clientHeight - (parseFloat(getComputedStyle(container).paddingTop) || 0) - (parseFloat(getComputedStyle(container).paddingBottom) || 0)) : viewport.height;
+
+        const baseScaleWidth = desiredDisplayWidth / viewport.width;
+        const baseScaleHeight = desiredDisplayHeight / viewport.height;
+        const fitScale = Math.min(baseScaleWidth, baseScaleHeight);
+
+        const finalDisplayScale = fitScale * scale;
+
+        canvas.style.width = `${viewport.width * finalDisplayScale}px`;
+        canvas.style.height = `${viewport.height * finalDisplayScale}px`;
+
+        const actualCanvasWidth = Math.floor(viewport.width * finalDisplayScale * outputScale);
+        const actualCanvasHeight = Math.floor(viewport.height * finalDisplayScale * outputScale);
+
+        canvas.width = actualCanvasWidth;
+        canvas.height = actualCanvasHeight;
+
+        context.scale(outputScale, outputScale);
+
+        const renderViewport = page.getViewport({ scale: finalDisplayScale });
+
+        renderTaskRef.current = page.render({
+          canvasContext: context,
+          viewport: renderViewport,
           renderInteractiveForms: true
         });
         
         await renderTaskRef.current.promise;
-        
-        // Only update the DOM canvas if this render wasn't cancelled
-        if (renderTaskRef.current && canvasRef.current) {
-          const oldCanvas = canvasRef.current;
-          const oldContext = oldCanvas.getContext('2d');
-          
-          // Match dimensions
-          oldCanvas.width = newCanvas.width;
-          oldCanvas.height = newCanvas.height;
-          
-          // Clear and copy the rendered content
-          oldContext.clearRect(0, 0, oldCanvas.width, oldCanvas.height);
-          oldContext.drawImage(newCanvas, 0, 0);
-        }
-        
-        renderTaskRef.current = null;
-        
+
       } catch (error) {
-        // Only log errors that are not due to rendering cancellation
         if (error.name !== 'RenderingCancelledException') {
           console.error("Error rendering PDF page:", error);
-        }
-        renderTaskRef.current = null;
       }
-    };
+      } finally {
+        renderTaskRef.current = null;
+    }
+  };
+  
     renderPage();
+
+    const resizeObserver = new ResizeObserver(() => {
+        renderPage();
+    });
+
+    const containerElement = canvasRef.current?.parentElement;
+    if (containerElement) {
+        resizeObserver.observe(containerElement);
+    }
+
     return () => {
       if (renderTaskRef.current) {
         try {
@@ -90,10 +96,13 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         } catch (e) {
           // Ignore cancellation errors
         }
-        renderTaskRef.current = null;
       }
+      if (containerElement) {
+          resizeObserver.unobserve(containerElement);
+      }
+      renderTaskRef.current = null;
     };
-  }, [pdfData.pdf, pdfData.currentPage, scale, pdfData.id, pdfData.totalPages]);
+  }, [pdfData.pdf, pdfData.currentPage, pdfData.id, pdfData.totalPages, isZenMode, scale]);
 
   const handleMouseDown = (e) => {
     setIsSelecting(true);
@@ -110,41 +119,33 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
     const y = e.clientY - rect.top;
     setSelectionRect(prev => ({ ...prev, endX: x, endY: y }));
   };
-  
-  const handleMouseUp = async () => { // Make the function async
+  const handleMouseUp = async () => {
     if (!isSelecting || !selectionRect) return;
 
     const { startX, endX, startY, endY } = selectionRect;
     const canvas = canvasRef.current;
-    
-    // Normalize coordinates
+
     const rectX = Math.min(startX, endX);
     const rectY = Math.min(startY, endY);
     const rectWidth = Math.abs(endX - startX);
     const rectHeight = Math.abs(endY - startY);
 
-    if (rectWidth > 15 && rectHeight > 15) { // Minimum selection size
+    if (rectWidth > 15 && rectHeight > 15) {
       try {
-        // --- High-Quality Capture Logic ---
         const page = await pdfData.pdf.getPage(pdfData.currentPage);
-        const captureScale = 5.0; // Increase for higher quality - 5x resolution
+        const captureScale = 5.0;
         const viewport = page.getViewport({ scale: captureScale });
 
-        // Create a temporary, high-res canvas
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = viewport.width;
         tempCanvas.height = viewport.height;
         const tempCtx = tempCanvas.getContext('2d');
 
-        // Render the page at high resolution
         await page.render({
           canvasContext: tempCtx,
           viewport: viewport,
         }).promise;
-        
-        // Calculate the source coordinates on the high-res canvas.
-        // We need to scale the selection box coordinates from the display canvas size
-        // to the high-res canvas size.
+
         const scaleX = tempCanvas.width / canvas.width;
         const scaleY = tempCanvas.height / canvas.height;
 
@@ -153,7 +154,6 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         const sourceWidth = rectWidth * scaleX;
         const sourceHeight = rectHeight * scaleY;
 
-        // Create a final canvas to hold just the captured snippet
         const captureCanvas = document.createElement('canvas');
         captureCanvas.width = sourceWidth;
         captureCanvas.height = sourceHeight;
@@ -162,12 +162,11 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
         captureCtx.imageSmoothingEnabled = true;
         captureCtx.imageSmoothingQuality = 'high';
 
-        // Copy the selected region from the high-res canvas to the snippet canvas
         captureCtx.drawImage(
           tempCanvas,
-          sourceX, sourceY, sourceWidth, sourceHeight, // Source rect
-          0, 0, sourceWidth, sourceHeight // Destination rect
-        );
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, sourceWidth, sourceHeight
+  );
 
         // Get the final high-quality image data
         const imageData = captureCanvas.toDataURL('image/png', 1.0); // Use PNG for quality
@@ -187,7 +186,6 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
     const { startX, endX, startY, endY } = selectionRect;
     const canvas = canvasRef.current;
     return {
-      // Add the canvas's offset within its container to correctly position the overlay
       left: Math.min(startX, endX) + canvas.offsetLeft + 'px',
       top: Math.min(startY, endY) + canvas.offsetTop + 'px',
       width: Math.abs(endX - startX) + 'px',
@@ -203,10 +201,10 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index }) {
   }, [onPageChange, pdfData.id, pdfData.currentPage, pdfData.totalPages]);
 
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3)); // Max scale 3x
+    setScale(prev => Math.min(prev + 0.25, 3));
   };
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5)); // Min scale 0.5x
+    setScale(prev => Math.max(prev - 0.25, 0.5));
   };
   const handleResetZoom = () => {
     setScale(1.5);
