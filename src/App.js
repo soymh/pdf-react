@@ -445,6 +445,40 @@ function App() {
     }
   };
 
+  const handleRenameWorkspace = async (workspaceId, newName) => {
+    const currentWorkspace = workspaces.find(w => w.id === workspaceId);
+    if (!currentWorkspace) return;
+
+    const trimmedName = newName.trim();
+
+    // Only update if the name has actually changed and is not empty
+    if (trimmedName && trimmedName !== currentWorkspace.name) {
+      const updatedWorkspace = { ...currentWorkspace, name: trimmedName };
+      await db.saveWorkspace(updatedWorkspace);
+      setWorkspaces(prev =>
+        prev.map(w =>
+          w.id === workspaceId ? updatedWorkspace : w
+        )
+      );
+      showNotification(`Workspace renamed to "${trimmedName}"!`, 'success');
+    }
+  };
+
+  const handleDeleteWorkspace = async (workspaceId) => {
+    if (window.confirm('Are you sure you want to delete this workspace and all its associated data (PDFs, spaces, captures)? This action cannot be undone.')) {
+      await db.deleteWorkspace(workspaceId);
+      setWorkspaces(prev => {
+        const updatedWorkspaces = prev.filter(w => w.id !== workspaceId);
+        if (workspaceId === activeWorkspaceId) {
+          setActiveWorkspaceId(updatedWorkspaces.length > 0 ? updatedWorkspaces[0].id : null);
+          localStorage.setItem('pdfLastActiveWorkspaceId', JSON.stringify(updatedWorkspaces.length > 0 ? updatedWorkspaces[0].id : null));
+        }
+        return updatedWorkspaces;
+      });
+      showNotification('Workspace and its data deleted!', 'success');
+    }
+  };
+
   const addNewPageToSpace = async (spaceId) => {
     await updateWorkspace(w => ({
       ...w,
@@ -743,6 +777,8 @@ function App() {
         activeWorkspaceId={activeWorkspaceId}
         onSetActive={handleSetActiveWorkspace}
         onCreate={() => setIsWorkspaceModalOpen(true)}
+        onDelete={handleDeleteWorkspace}
+        onRename={handleRenameWorkspace}
         isZenMode={isZenMode}
         onExport={handleExportWorkspace}
         onImport={() => document.getElementById('importWorkspaceInput').click()}
