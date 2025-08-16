@@ -226,6 +226,22 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
     setScale(1);
   };
 
+  const handleDownload = () => {
+    if (pdfData && pdfData.data) {
+      const blob = new Blob([pdfData.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = pdfData.name || 'download.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      console.warn("PDF data not available for download.");
+    }
+  };
+
   return (
     <div className="pdf-viewer glow" style={{ animationDelay: `${index * 100}ms` }}>
       <div className="pdf-header">
@@ -234,6 +250,14 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
           <button className="pdf-nav-btn" onClick={handleZoomOut} title="Zoom Out">-</button>
           <button className="pdf-nav-btn" onClick={handleResetZoom} title="Reset Zoom">⚬</button>
           <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">+</button>
+          <button
+            className="pdf-nav-btn"
+            onClick={handleDownload}
+            title="Download PDF"
+            style={{ background: 'linear-gradient(45deg, rgba(38, 220, 127, 0.4), rgba(24, 190, 93, 0.6))' }}
+          >
+            📥
+          </button>
           <button
             className="pdf-nav-btn"
             onClick={() => changePage(-1)}

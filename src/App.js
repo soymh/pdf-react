@@ -169,31 +169,39 @@ function App() {
       const loadedPdfs = await Promise.all(
         currentPdfInfos.map(async (docInfo) => {
           let pdf = pdfCacheRef.current.get(docInfo.id);
+          let pdfDataFromDb = null; // Variable to store ArrayBuffer
 
           if (!pdf) {
             const pdfRecord = await db.getPdf(docInfo.id);
             if (pdfRecord) {
-          try {
+              try {
                 pdf = await getDocument(pdfRecord.data).promise;
                 pdfCacheRef.current.set(docInfo.id, pdf);
-    } catch (error) {
+                pdfDataFromDb = pdfRecord.data; // Store the ArrayBuffer
+              } catch (error) {
                 showNotification(`Error loading ${docInfo.name}: ${error.message}`, 'error');
                 return null;
-    }
+              }
+            }
+          } else {
+            // If PDF is already in cache, retrieve its data from DB if not already stored
+            const pdfRecord = await db.getPdf(docInfo.id);
+            if (pdfRecord) {
+              pdfDataFromDb = pdfRecord.data;
             }
           }
 
           if (pdf) {
             const currentPage = docInfo.currentPage || 1;
-            return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages };
+            return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages, data: pdfDataFromDb }; // Pass the ArrayBuffer here
           }
           return null;
         })
-  );
+      );
 
       setLivePdfDocs(loadedPdfs.filter(Boolean));
       loadedPdfIdsRef.current = currentPdfIds;
-  };
+    };
 
     loadOrUpdatePdfObjects();
   }, [activeWorkspace, showNotification]);
