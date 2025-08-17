@@ -24,7 +24,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/build/pdf';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'; // Add PDFDocument, rgb, StandardFonts for PDF reconstruction
+import { PDFDocument} from 'pdf-lib'; // Add PDFDocument, rgb, StandardFonts for PDF reconstruction
 import { jsPDF } from "jspdf";
 import { createPortal } from 'react-dom';
 
@@ -37,9 +37,9 @@ import CreateSpaceModal from './components/CreateSpaceModal';
 import CreateWorkspaceModal from './components/CreateWorkspaceModal';
 import WorkspacesPanel from './components/WorkspacesPanel';
 import Notification from './components/Notification';
+import SettingsMenu from './components/SettingsMenu'; // Import SettingsMenu
 import upscaleImage from './upscaleImage'; // Import the new upscaleImage module
 import './App.css';
-import { backend } from '@tensorflow/tfjs';
 
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -57,6 +57,8 @@ function App() {
   const [upscalingPdfId, setUpscalingPdfId] = useState(null); // Track upscaling status
   const [upscaleProgress, setUpscaleProgress] = useState(0); // New state for progress
   const [upscaleMessageIndex, setUpscaleMessageIndex] = useState(0); // New state for message index
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false); // State for settings menu visibility
+  const [upscalingBackend, setUpscalingBackend] = useState('webgpu'); // Default upscaling backend
   const upscaleMessages = useRef([ // Messages for the upscaling overlay
     "Sit back while the page scales up!",
     "Your eyes thank you!",
@@ -258,7 +260,7 @@ function App() {
 
       // Pass a callback function to upscaleImage to receive progress updates
       const upscaledImageResult = await new Promise((resolve, reject) => {
-        upscaleImage(imageData, 'realx4plus', 'webgpu', (progressEvent) => {
+        upscaleImage(imageData, 'realx4plus', upscalingBackend, (progressEvent) => {
           if (progressEvent.detail.progress !== undefined) {
             setUpscaleProgress(progressEvent.detail.progress); // Update progress based on actual worker progress
           }
@@ -980,6 +982,15 @@ function App() {
         isZenMode={isZenMode}
         onExport={handleExportWorkspace}
         onImport={() => document.getElementById('importWorkspaceInput').click()}
+        renderSettingsButton={() => (
+          <button
+            className="settings-button"
+            onClick={() => setShowSettingsMenu(true)}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+        )}
       />
 
       <div className="container">
@@ -1153,6 +1164,16 @@ function App() {
         >
           {isZenMode ? (isSinglePdfZenMode ? '📚 Multi-PDF' : '📄 Single') : 'Zen Mode'}
         </button>,
+        document.body
+      )}
+
+      {/* NEW: Settings Menu Portal */}
+      {showSettingsMenu && createPortal(
+        <SettingsMenu
+          currentBackend={upscalingBackend}
+          onBackendChange={setUpscalingBackend}
+          onClose={() => setShowSettingsMenu(false)}
+        />,
         document.body
       )}
 

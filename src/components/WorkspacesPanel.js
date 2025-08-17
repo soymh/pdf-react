@@ -9,6 +9,7 @@ function WorkspacesPanel({
   onRename,
   onImport,
   onExport,
+  renderSettingsButton, // New prop to receive the settings button
 }) {
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [editingWorkspaceName, setEditingWorkspaceName] = useState('');
@@ -42,6 +43,9 @@ function WorkspacesPanel({
   return (
     <div className="workspaces-panel">
       <h2 className="workspaces-header">🚀 Workspaces</h2>
+      <div className="workspaces-panel-header-buttons">
+        {renderSettingsButton()} {/* Render the settings button here */}
+      </div>
       <div className="workspaces-list">
         {workspaces.map(workspace => (
           <div
