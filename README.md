@@ -1,4 +1,3 @@
-
 # ⚡ PDF Workspace - Cyberpunk Edition ⚡
 
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
@@ -6,18 +5,19 @@
 ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)
 
-A dynamic, cyberpunk-themed web application built with React for advanced PDF interaction. Go beyond simple viewing—capture regions, organize snippets into "Spaces," and compile them into new documents. This project was built to explore modern React features and demonstrate handling complex UI/UX with third-party libraries like PDF.js.
+A dynamic, cyberpunk-themed web application built with React for advanced PDF interaction. Go beyond simple viewing—capture regions, organize snippets into "Spaces" and "Workspaces," and compile them into new documents. This project explores modern React features and demonstrates handling complex UI/UX with third-party libraries.
 
 ## Key Features
 
 -   **Multi-PDF Viewer**: Load and view multiple PDF documents side-by-side in a scrollable workspace.
 -   **Region Capture**: Select any rectangular area on a PDF page with your mouse to create an image snippet.
--   **"Spaces" for Organization**: Create distinct workspaces (called "Spaces") to collect and group your captured snippets.
+-   **"Spaces" for Organization**: Create distinct digital "Spaces" within "Workspaces" to collect and group your captured snippets.
 -   **Drag-and-Drop Reordering**: Easily reorder your captured images within a Space using a smooth drag-and-drop interface.
 -   **PDF Export**: Compile all the captures within a Space into a brand new, single PDF document, preserving the order you set.
--   **Persistent State**: Your created Spaces and captures are automatically saved to your browser's `localStorage`, so your work is preserved between sessions.
+-   **Persistent State**: Your created Workspaces, Spaces, and captures are automatically saved to your browser's `IndexedDB`, ensuring your work is preserved between sessions.
 -   **Workspace Import/Export**: Import and export entire workspaces, including all associated PDFs (binaries) and spaces with captures, for easy migration and backup.
--   **Single-Page PDF Upscaling**: Enhance the quality of individual PDF pages by upscaling them, replacing the original page with its high-resolution version within the PDF document.
+-   **Single-Page PDF Upscaling**: Enhance the quality of individual PDF pages by upscaling them, replacing the original page with its high-resolution version within the PDF document. (Powered by a web-optimized Real-ESRGAN implementation from [xororz/web-realesrgan](https://github.com/xororz/web-realesrgan), using the `realx4v3-fast` model by default).
+-   **Upscaling Backend Selection**: Choose between WebGPU (recommended) and WebGL backends for the upscaling process via a dedicated settings menu.
 -   **Immersive Upscaling Feedback**: During upscaling, enjoy a custom loading experience featuring a circular progress bar, a subtle blur on the target PDF, and dynamic, looping cyberpunk-themed messages with magic sparks.
 -   **Zen Mode**: Minimize distractions with a dedicated Zen Mode for focused PDF viewing.
 -   **Responsive & Dynamic UI**: A sleek, cyberpunk-themed interface featuring a hover-to-expand sidebar and fluid animations.
@@ -25,10 +25,14 @@ A dynamic, cyberpunk-themed web application built with React for advanced PDF in
 ## Tech Stack
 
 -   **[React](https://reactjs.org/)**: The core UI library for building the component-based architecture.
--   **[PDF.js](https://mozilla.github.io/pdf.js/)**: (`pdfjs-dist`) A library from Mozilla for rendering PDF documents onto an HTML `<canvas>`.
--   **[jsPDF](https://github.com/parallax/jsPDF)**: Used to generate the final, combined PDF from the captured image snippets.
+-   **[PDF.js](https://mozilla.github.io/pdf.js/) (`pdfjs-dist`)**: A powerful library from Mozilla for parsing and rendering PDF documents onto an HTML `<canvas>`.
+-   **[pdf-lib](https://pdf-lib.js.org/)**: For programmatically creating new PDF documents and embedding images.
+-   **[TensorFlow.js](https://www.tensorflow.org/js)**: The machine learning library used within the web worker for image upscaling algorithms.
+-   **Web Workers**: Crucial for offloading computationally intensive image upscaling tasks from the main thread.
+-   **IndexedDB**: Persistent storage (via `src/db.js`) for PDF binary data, workspaces, and spaces.
+-   **[jsPDF](https://github.com/parallax/jsPDF)**: Used to generate the final, combined PDF from the captured image snippets (for Space export).
 -   **[React SortableJS](https://github.com/SortableJS/react-sortablejs)**: A React wrapper for the powerful `Sortable.js` library to enable drag-and-drop functionality.
--   **CSS3**: Custom styling for the unique cyberpunk theme, including animations, flexbox/grid layouts, and the hover-based UI.
+-   **CSS3**: Custom styling for the unique cyberpunk theme, including complex animations, flexbox/grid layouts, and the hover-based UI.
 
 ## Getting Started
 
@@ -68,35 +72,62 @@ The project is organized with a clear and scalable component-based structure.
 
 ```
 pdf-react/
+├── .github/              # GitHub Actions workflows
+│   └── workflows/
+│       └── release.yml   # Workflow for creating releases
 ├── public/
-│   ├── index.html          # The root HTML file
-│   └── pdf.worker.min.js   # PDF.js worker file for performance
-│
+│   ├── favicon.ico         # Website favicon
+│   ├── index.html          # The main HTML file for the application
+│   ├── logo192.png         # PWA icon (192x192)
+│   ├── logo512.png         # PWA icon (512x512)
+│   ├── manifest.json       # Web application manifest for PWA features
+│   ├── models/             # Directory for AI/ML models (e.g., Real-ESRGAN models)
+│   │   └── realx4v3-fast/  # Default Real-ESRGAN model files
+│   │       ├── group1-shard1of1.bin # Model weights
+│   │       └── model.json           # Model architecture configuration
+│   ├── pdf.worker.min.mjs  # PDF.js worker module for off-main-thread PDF rendering
+│   └── robots.txt          # Directives for web crawlers
 ├── src/
-│   ├── components/         # All reusable React components
-│   │   ├── CreateSpaceModal.js
-│   │   ├── Header.js
-│   │   ├── Notification.js
-│   │   ├── PdfViewer.js
-│   │   └── SpacesPanel.js
-│   │
-│   ├── App.js              # The main application component, holds the primary state
-│   ├── App.css             # All styles for the application
-│   └── index.js            # The entry point for the React app
-│
-├── .gitignore
-├── package.json
-└── README.md
+│   ├── assets/             # Static assets like icons, images, etc.
+│   │   └── icons/          # (Optional) Directory for SVG icons, if used (currently empty)
+│   ├── components/         # Reusable React UI components
+│   │   ├── CreateSpaceModal.js     # Modal for creating new PDF spaces
+│   │   ├── CreateWorkspaceModal.js # Modal for creating new workspaces
+│   │   ├── Header.js               # Application header and main controls
+│   │   ├── Notification.js         # UI component for displaying toast notifications
+│   │   ├── PageEditor.css          # Styles for the PageEditor component
+│   │   ├── PageEditor.js           # Component for editing pages within a space
+│   │   ├── PdfViewer.js            # Component for rendering and interacting with a single PDF document
+│   │   ├── SettingsMenu.js         # Modal for application settings (e.g., upscaling backend)
+│   │   ├── SpaceItem.js            # Represents a single space and its captures within SpacesPanel
+│   │   ├── SpacesPanel.js          # Sidebar panel for managing PDF spaces and captures
+│   │   └── WorkspacesPanel.js      # Sidebar panel for managing different workspaces
+│   ├── App.css             # Global and component-specific styles for the application
+│   ├── App.js              # The main application component, manages global state, routing, and core logic
+│   ├── App.test.js         # Jest tests for the main App component
+│   ├── db.js               # IndexedDB utility functions for persistent data storage
+│   ├── index.css           # Base styles for the application
+│   ├── index.js            # Entry point for the React application, renders the App component
+│   ├── logo.svg            # React logo SVG
+│   ├── reportWebVitals.js  # Utility for measuring application performance (Web Vitals)
+│   ├── setupTests.js       # Configuration for Jest/React Testing Library setup
+│   ├── upscaleImage.js     # Helper module for initiating image upscaling with the web worker
+│   ├── upscalePdf.js       # (Future use or broader PDF upscaling logic - currently not in use)
+│   └── upscaleWorker.js    # Dedicated Web Worker for running the computationally intensive upscaling model
+├── .gitignore            # Specifies intentionally untracked files to ignore
+├── package.json          # Lists project dependencies, scripts, and metadata
+└── README.md             # This comprehensive project documentation
 ```
 
 ## Future Ideas
 
-This project has a solid foundation. Here are some ideas for future enhancements:
+This project has a solid foundation and is continuously evolving. Here are some ideas for future enhancements:
 -   [x] Implement easy captured sections manipulation (e.g., Add Multiple captured pages freely in a PDF page).
--   [ ] Add AI tools to make Markdown Notes out of your captured PDFs!
+-   [ ] Add more AI tools; e.g. make Markdown Notes out of your captured PDFs!
 -   [ ] Implement a cloud api trigger for converting notes to markdown using Vision AI models.
--   [ ] Add more export options...
+-   [ ] Add more export options (e.g., export spaces as images).
 -   [ ] Enhance accessibility (ARIA attributes, keyboard navigation).
+-   [ ] Implement multi-language support.
 
 ## License
 
