@@ -16,6 +16,10 @@ A dynamic, cyberpunk-themed web application built with React for advanced PDF in
 -   **Drag-and-Drop Reordering**: Easily reorder your captured images within a Space using a smooth drag-and-drop interface.
 -   **PDF Export**: Compile all the captures within a Space into a brand new, single PDF document, preserving the order you set.
 -   **Persistent State**: Your created Spaces and captures are automatically saved to your browser's `localStorage`, so your work is preserved between sessions.
+-   **Workspace Import/Export**: Import and export entire workspaces, including all associated PDFs (binaries) and spaces with captures, for easy migration and backup.
+-   **Single-Page PDF Upscaling**: Enhance the quality of individual PDF pages by upscaling them, replacing the original page with its high-resolution version within the PDF document.
+-   **Immersive Upscaling Feedback**: During upscaling, enjoy a custom loading experience featuring a circular progress bar, a subtle blur on the target PDF, and dynamic, looping cyberpunk-themed messages with magic sparks.
+-   **Zen Mode**: Minimize distractions with a dedicated Zen Mode for focused PDF viewing.
 -   **Responsive & Dynamic UI**: A sleek, cyberpunk-themed interface featuring a hover-to-expand sidebar and fluid animations.
 
 ## Tech Stack
@@ -100,3 +104,4 @@ This project is distributed under the MIT License. See `LICENSE` for more inform
 
 ---
 *This README was generated with care using AI! Feel free to contribute by opening an issue or a pull request!*
+
