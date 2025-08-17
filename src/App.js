@@ -55,18 +55,27 @@ function App() {
   const [isSinglePdfZenMode, setIsSinglePdfZenMode] = useState(false);
   const [activeSinglePdfIndex, setActiveSinglePdfIndex] = useState(0);
   const [upscalingPdfId, setUpscalingPdfId] = useState(null); // Track upscaling status
-  const loadedPdfIdsRef = useRef([]);
-  const pdfCacheRef = useRef(new Map());
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
-  const spaces = activeWorkspace ? activeWorkspace.spaces : [];
-  const activeSpaceId = activeWorkspace ? activeWorkspace.activeSpaceId : null;
-  const showNotification = useCallback((message, type = 'info') => {
+  const [upscaleProgress, setUpscaleProgress] = useState(0); // New state for progress
+  const [upscaleMessageIndex, setUpscaleMessageIndex] = useState(0); // New state for message index
+  const upscaleMessages = useRef([ // Messages for the upscaling overlay
+    "Sit back while the page scales up!",
+    "Your eyes thank you!",
+    "Processing pixels with precision...",
+    "Almost there, visual fidelity loading...",
+    "Enhancing details, one byte at a time..."
+  ]);
+  const loadedPdfIdsRef = useRef([]); // <<<<< ADDED THIS LINE
+  const pdfCacheRef = useRef(new Map()); // <<<<< ADDED THIS LINE
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId); // <<<<< ADDED THIS LINE
+  const spaces = activeWorkspace ? activeWorkspace.spaces : []; // <<<<< ADDED THIS LINE
+  const activeSpaceId = activeWorkspace ? activeWorkspace.activeSpaceId : null; // <<<<< ADDED THIS LINE
+  const showNotification = useCallback((message, type = 'info') => { // <<<<< ADDED THIS LINE
     const id = Date.now();
     setNotifications(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
-  }, []);
+  }, []); // <<<<< ADDED THIS LINE
 
   const toggleZenMode = useCallback(() => {
     setIsZenMode(prev => {
@@ -221,10 +230,19 @@ function App() {
   // New handleUpscale function for single page
   const handleUpscale = async (pdfId, pageNumber, imageData) => {
     setUpscalingPdfId(pdfId);
+    setUpscaleProgress(0); // Reset progress
+    setUpscaleMessageIndex(0); // Reset message index
     showNotification(`Upscaling page ${pageNumber} of PDF ID ${pdfId}... This may take a moment.`, 'info');
     console.log(`App.js: Starting upscale for PDF ${pdfId}, page ${pageNumber}. Input imageData dimensions: ${imageData.width}x${imageData.height}.`);
 
+    let messageInterval;
+
     try {
+      // Loop through messages
+      messageInterval = setInterval(() => {
+        setUpscaleMessageIndex(prevIndex => (prevIndex + 1) % upscaleMessages.current.length);
+      }, 5000); // Change message every 5 seconds
+
       const pdfRecord = await db.getPdf(pdfId);
       if (!pdfRecord || !pdfRecord.data) {
         throw new Error("Original PDF data not found in DB.");
@@ -237,7 +255,18 @@ function App() {
       console.log(`App.js: Original PDF has ${totalPages} pages.`);
 
       console.log("App.js: Calling upscaleImage module...");
-      const upscaledImageResult = await upscaleImage(imageData);
+
+      // Pass a callback function to upscaleImage to receive progress updates
+      const upscaledImageResult = await new Promise((resolve, reject) => {
+        upscaleImage(imageData, 'realx4plus', 'webgpu', (progressEvent) => {
+          if (progressEvent.detail.progress !== undefined) {
+            setUpscaleProgress(progressEvent.detail.progress); // Update progress based on actual worker progress
+          }
+        })
+        .then(resolve)
+        .catch(reject);
+      });
+
       console.log(`App.js: Received upscaled image data. Type: ${typeof upscaledImageResult.data}, Length: ${upscaledImageResult.data.length}.`);
       if (!upscaledImageResult.data || upscaledImageResult.data.length === 0) {
           throw new Error("Upscaled image data is empty or invalid.");
@@ -360,17 +389,19 @@ function App() {
       setLivePdfDocs(prevDocs => prevDocs.map(doc => 
         doc.id === pdfId ? { ...doc, pdf: null, data: newPdfBytes } : doc
       ));
+      setUpscaleProgress(100); // Ensure progress is 100% on success
       showNotification(`Page ${pageNumber} of PDF ID ${pdfId} upscaled and updated!`, 'success');
 
     } catch (error) {
       console.error("App.js: Error during single page upscaling and PDF reconstruction:", error);
       showNotification(`Failed to upscale and update page: ${error.message}`, 'error');
     } finally {
+      clearInterval(messageInterval); // Clear the message interval
       setUpscalingPdfId(null);
+      setUpscaleProgress(0); // Reset for next upscale
+      setUpscaleMessageIndex(0); // Reset for next upscale
     }
   };
-
-
 
   const handleCreateWorkspace = async (name) => {
     const newWorkspace = { id: Date.now(), name, pdfDocuments: [], spaces: [], activeSpaceId: null };
@@ -977,6 +1008,9 @@ function App() {
                   onCapture={handleCapture}
                   onUpscale={handleUpscale}
                   isUpscaling={upscalingPdfId === doc.id}
+                  upscaleProgress={upscalingPdfId === doc.id ? upscaleProgress : 0} // Pass progress only for the active PDF
+                  upscaleMessage={upscalingPdfId === doc.id ? upscaleMessages.current[upscaleMessageIndex] : ''} // Pass current message
+                  showUpscaleOverlay={upscalingPdfId === doc.id} // Control overlay visibility
                   onZoomCapture={handleZoomCapture}
                   isZenMode={isZenMode}
                   isSinglePdfZenMode={isSinglePdfZenMode}

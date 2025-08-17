@@ -2,7 +2,7 @@
 
 let upscaleWorker = new Worker(new URL('./upscaleWorker.js', import.meta.url), { type: 'module' });
 
-async function upscaleImage(imageData, modelName = 'realx4plus', backend = 'webgpu') {
+async function upscaleImage(imageData, modelName = 'realx4plus', backend = 'webgpu', onProgress = () => {}) { // Add onProgress callback
   console.log("Image Upscale Module: Received imageData for upscaling with dimensions:", imageData.width, "x", imageData.height);
   console.log("Image Upscale Module: Sending image data to upscale worker...");
 
@@ -23,6 +23,7 @@ async function upscaleImage(imageData, modelName = 'realx4plus', backend = 'webg
         reject(new Error(event.data.alertmsg)); // Reject the promise on error
       } else if (event.data.progress) {
         console.log(`Image Upscale Module: Upscaling Progress: ${event.data.progress.toFixed(2)}% - ${event.data.info}`);
+        onProgress({ detail: { progress: event.data.progress, info: event.data.info } }); // Call the progress callback
       }
     };
     upscaleWorker.addEventListener('message', handleWorkerMessage);

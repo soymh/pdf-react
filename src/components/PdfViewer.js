@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
-function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, index, isZenMode }) {
+function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, upscaleProgress, upscaleMessage, index, isZenMode, isSinglePdfZenMode }) {
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -272,7 +272,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
   };
 
   return (
-    <div className="pdf-viewer glow" style={{ animationDelay: `${index * 100}ms` }}>
+    <div className={`pdf-viewer glow ${isUpscaling ? 'upscaling-active' : ''}`} style={{ animationDelay: `${index * 100}ms` }}>
       <div className="pdf-header">
         <div className="pdf-title" title={pdfData.name}>{pdfData.name}</div>
         <div className="pdf-controls">
@@ -284,9 +284,9 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
             onClick={handleUpscaleClick}
             disabled={isUpscaling}
             title="Upscale Current Page"
-            style={{ background: 'linear-gradient(45deg, rgba(120, 38, 220, 0.4), rgba(90, 24, 190, 0.6))' }}
+            style={{ background: isUpscaling ? 'linear-gradient(45deg, rgba(255, 165, 0, 0.6), rgba(255, 99, 71, 0.8))' : 'linear-gradient(45deg, rgba(120, 38, 220, 0.4), rgba(90, 24, 190, 0.6))' }}
           >
-            {isUpscaling ? '... ⏳' : '✨'}
+            {isUpscaling ? '⏳' : '✨'}
           </button>
           <button
             className="pdf-nav-btn"
@@ -300,7 +300,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
           <button
             className="pdf-nav-btn"
             onClick={() => changePage(-1)}
-            disabled={pdfData.currentPage <= 1}
+            disabled={pdfData.currentPage <= 1 || isUpscaling}
             title="Previous Page"
           >
             ◀
@@ -311,7 +311,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
           <button
             className="pdf-nav-btn"
             onClick={() => changePage(1)}
-            disabled={pdfData.currentPage >= pdfData.totalPages}
+            disabled={pdfData.currentPage >= pdfData.totalPages || isUpscaling}
             title="Next Page"
           >
             ▶
@@ -321,6 +321,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
             onClick={() => onRemove(pdfData.id)}
             style={{ background: 'linear-gradient(45deg, rgba(220, 38, 127, 0.4), rgba(190, 24, 93, 0.6))' }}
             title="Remove PDF"
+            disabled={isUpscaling}
           >
             ✕
           </button>
@@ -334,6 +335,23 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
           onMouseMove={handleMouseMove}
         />
         {isSelecting && <div className="selection-overlay" style={getSelectionStyle()}></div>}
+        
+        {isUpscaling && (
+          <div className="upscale-overlay">
+            <div className="upscale-blur-background"></div>
+            <div className="upscale-content">
+              <div className="sparks-animation"></div> {/* Sparks handled by CSS pseudo-elements */}
+              <div className="circular-progress" style={{'--progress': `${upscaleProgress}%`}}>
+                <span>{upscaleProgress.toFixed(0)}%</span>
+              </div>
+              <div className="upscale-message-container">
+                <div className="upscale-messages">
+                  <p key={upscaleMessage}> {upscaleMessage}</p> {/* Only render the current message */}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
