@@ -1,11 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
-function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMode }) {
+function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, index, isZenMode }) {
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
   const [scale, setScale] = useState(1);
+
+  // Ref to hold the current page's rendered ImageData for upscaling
+  const currentPageImageDataRef = useRef(null);
+
   useEffect(() => {
     const renderPage = async () => {
     const canvas = canvasRef.current;
@@ -68,6 +72,23 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
         });
         
         await renderTaskRef.current.promise;
+
+        // Store ImageData for the current page after rendering
+        // Use a higher scale for storing as this will be the input to the upscaler
+        const upscaleInputScale = 2.0; // Or higher, depending on desired input quality for upscaler
+        const upscaleViewport = page.getViewport({ scale: upscaleInputScale });
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = upscaleViewport.width;
+        offscreenCanvas.height = upscaleViewport.height;
+        const offscreenContext = offscreenCanvas.getContext('2d');
+
+        await page.render({
+          canvasContext: offscreenContext,
+          viewport: upscaleViewport,
+          renderInteractiveForms: true
+        }).promise;
+        currentPageImageDataRef.current = offscreenContext.getImageData(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+        console.log(`PdfViewer ${pdfData.id}: Stored ImageData for upscaling (page ${pdfData.currentPage}) with dimensions ${currentPageImageDataRef.current.width}x${currentPageImageDataRef.current.height}.`);
 
       } catch (error) {
         if (error.name !== 'RenderingCancelledException') {
@@ -242,6 +263,14 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
     }
   };
 
+  const handleUpscaleClick = async () => {
+    if (!currentPageImageDataRef.current) {
+      console.warn("No image data available for upscaling.");
+      return;
+    }
+    onUpscale(pdfData.id, pdfData.currentPage, currentPageImageDataRef.current);
+  };
+
   return (
     <div className="pdf-viewer glow" style={{ animationDelay: `${index * 100}ms` }}>
       <div className="pdf-header">
@@ -252,10 +281,20 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, index, isZenMod
           <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">+</button>
           <button
             className="pdf-nav-btn"
+            onClick={handleUpscaleClick}
+            disabled={isUpscaling}
+            title="Upscale Current Page"
+            style={{ background: 'linear-gradient(45deg, rgba(120, 38, 220, 0.4), rgba(90, 24, 190, 0.6))' }}
+          >
+            {isUpscaling ? '... ⏳' : '✨'}
+          </button>
+          <button
+            className="pdf-nav-btn"
             onClick={handleDownload}
             title="Download PDF"
             style={{ background: 'linear-gradient(45deg, rgba(38, 220, 127, 0.4), rgba(24, 190, 93, 0.6))' }}
           >
+
             📥
           </button>
           <button

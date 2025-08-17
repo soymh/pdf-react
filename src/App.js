@@ -24,6 +24,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist/build/pdf';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'; // Add PDFDocument, rgb, StandardFonts for PDF reconstruction
 import { jsPDF } from "jspdf";
 import { createPortal } from 'react-dom';
 
@@ -36,7 +37,9 @@ import CreateSpaceModal from './components/CreateSpaceModal';
 import CreateWorkspaceModal from './components/CreateWorkspaceModal';
 import WorkspacesPanel from './components/WorkspacesPanel';
 import Notification from './components/Notification';
+import upscaleImage from './upscaleImage'; // Import the new upscaleImage module
 import './App.css';
+import { backend } from '@tensorflow/tfjs';
 
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -50,7 +53,8 @@ function App() {
   const [zoomedCapture, setZoomedCapture] = useState(null);
   const [isZenMode, setIsZenMode] = useState(false);
   const [isSinglePdfZenMode, setIsSinglePdfZenMode] = useState(false);
-  const [activeSinglePdfIndex, setActiveSinglePdfIndex] = useState(0); 
+  const [activeSinglePdfIndex, setActiveSinglePdfIndex] = useState(0);
+  const [upscalingPdfId, setUpscalingPdfId] = useState(null); // Track upscaling status
   const loadedPdfIdsRef = useRef([]);
   const pdfCacheRef = useRef(new Map());
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
@@ -213,6 +217,161 @@ function App() {
 
     return () => clearTimeout(notificationId);
   }, [showNotification]);
+
+  // New handleUpscale function for single page
+  const handleUpscale = async (pdfId, pageNumber, imageData) => {
+    setUpscalingPdfId(pdfId);
+    showNotification(`Upscaling page ${pageNumber} of PDF ID ${pdfId}... This may take a moment.`, 'info');
+    console.log(`App.js: Starting upscale for PDF ${pdfId}, page ${pageNumber}. Input imageData dimensions: ${imageData.width}x${imageData.height}.`);
+
+    try {
+      const pdfRecord = await db.getPdf(pdfId);
+      if (!pdfRecord || !pdfRecord.data) {
+        throw new Error("Original PDF data not found in DB.");
+      }
+      console.log("App.js: Original PDF data fetched from DB.");
+
+      const originalPdfBytes = pdfRecord.data;
+      const pdfjsDoc = await getDocument({ data: originalPdfBytes }).promise;
+      const totalPages = pdfjsDoc.numPages;
+      console.log(`App.js: Original PDF has ${totalPages} pages.`);
+
+      console.log("App.js: Calling upscaleImage module...");
+      const upscaledImageResult = await upscaleImage(imageData);
+      console.log(`App.js: Received upscaled image data. Type: ${typeof upscaledImageResult.data}, Length: ${upscaledImageResult.data.length}.`);
+      if (!upscaledImageResult.data || upscaledImageResult.data.length === 0) {
+          throw new Error("Upscaled image data is empty or invalid.");
+      }
+      console.log("App.js: First few bytes of upscaled image data:", upscaledImageResult.data.slice(0, 10));
+
+      // Convert upscaled Uint8ClampedArray to PNG Data URL
+      console.log("App.js: Converting upscaled image data to PNG Data URL...");
+      const upscaledCanvas = document.createElement('canvas');
+      upscaledCanvas.width = upscaledImageResult.width;
+      upscaledCanvas.height = upscaledImageResult.height;
+      const upscaledContext = upscaledCanvas.getContext('2d');
+      const upscaledImageDataObj = new ImageData(upscaledImageResult.data, upscaledImageResult.width, upscaledImageResult.height);
+      upscaledContext.putImageData(upscaledImageDataObj, 0, 0);
+      const upscaledPngDataUrl = upscaledCanvas.toDataURL('image/png');
+      console.log("App.js: Upscaled image converted to PNG Data URL. Length:", upscaledPngDataUrl.length);
+
+      const newPdfDoc = await PDFDocument.create();
+      console.log("App.js: Created new PDFDocument for reconstruction.");
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === pageNumber) {
+          // This is the page to replace with the upscaled image
+          console.log(`App.js: Embedding upscaled image for page ${i}.`);
+          const image = await newPdfDoc.embedPng(upscaledPngDataUrl);
+          const page = newPdfDoc.addPage();
+          
+          const { width: imgWidth, height: imgHeight } = image;
+          const pageWidth = page.getWidth();
+          const pageHeight = page.getHeight();
+
+          const imgAspectRatio = imgWidth / imgHeight;
+          const pageAspectRatio = pageWidth / pageHeight;
+
+          let finalWidth = pageWidth;
+          let finalHeight = pageHeight;
+
+          if (imgAspectRatio > pageAspectRatio) {
+            finalHeight = pageWidth / imgAspectRatio;
+          } else {
+            finalWidth = pageHeight * imgAspectRatio;
+          }
+
+          page.drawImage(image, {
+            x: (pageWidth - finalWidth) / 2,
+            y: (pageHeight - finalHeight) / 2,
+            width: finalWidth,
+            height: finalHeight,
+          });
+          console.log(`App.js: Upscaled image embedded on page ${i}.`)
+        } else {
+          // For other pages, render original page to canvas and embed
+          console.log(`App.js: Re-embedding original page ${i}.`);
+          const originalPage = await pdfjsDoc.getPage(i);
+          const viewport = originalPage.getViewport({ scale: 2.0 }); // Render at a good quality
+
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          await originalPage.render({ canvasContext: context, viewport: viewport }).promise;
+          const originalPageImageData = context.getImageData(0, 0, canvas.width, canvas.height);
+          
+          // Convert original page ImageData to PNG Data URL before embedding
+          console.log(`App.js: Converting original page ${i} ImageData to PNG Data URL...`);
+          const originalPageCanvas = document.createElement('canvas');
+          originalPageCanvas.width = originalPageImageData.width;
+          originalPageCanvas.height = originalPageImageData.height;
+          const originalPageContext = originalPageCanvas.getContext('2d');
+          originalPageContext.putImageData(originalPageImageData, 0, 0);
+          const originalPagePngDataUrl = originalPageCanvas.toDataURL('image/png');
+          console.log(`App.js: Original page ${i} converted to PNG Data URL. Length: ${originalPagePngDataUrl.length}`);
+
+          const image = await newPdfDoc.embedPng(originalPagePngDataUrl); // Embed original page image as Data URL
+          const page = newPdfDoc.addPage();
+
+          const { width: imgWidth, height: imgHeight } = image;
+          const pageWidth = page.getWidth();
+          const pageHeight = page.getHeight();
+
+          const imgAspectRatio = imgWidth / imgHeight;
+          const pageAspectRatio = pageWidth / pageHeight;
+
+          let finalWidth = pageWidth;
+          let finalHeight = pageHeight;
+
+          if (imgAspectRatio > pageAspectRatio) {
+            finalHeight = pageWidth / imgAspectRatio;
+          } else {
+            finalWidth = pageHeight * imgAspectRatio;
+          }
+
+          page.drawImage(image, {
+            x: (pageWidth - finalWidth) / 2,
+            y: (pageHeight - finalHeight) / 2,
+            width: finalWidth,
+            height: finalHeight,
+          });
+          console.log(`App.js: Original page ${i} re-embedded.`);
+        }
+      }
+      
+      console.log("App.js: Saving new PDF bytes...");
+      const newPdfBytes = await newPdfDoc.save();
+      console.log("App.js: New PDF bytes saved. Size:", newPdfBytes.byteLength);
+
+      // Overwrite the original PDF in DB with the new PDF data
+      console.log(`App.js: Overwriting PDF ID ${pdfId} in DB.`);
+      await db.savePdf({ id: pdfId, data: newPdfBytes });
+      
+      // Invalidate PDF.js cache for this PDF and reload it to reflect changes
+      console.log(`App.js: Invalidating PDF cache for ID ${pdfId} and triggering reload.`);
+      const pdfInstanceToDestroy = pdfCacheRef.current.get(pdfId);
+      if (pdfInstanceToDestroy) {
+        try { pdfInstanceToDestroy.destroy(); } catch (e) { console.warn("Error destroying old PDF instance:", e); }
+        pdfCacheRef.current.delete(pdfId);
+      }
+      // Trigger re-load of the specific PDF document in livePdfDocs
+      setLivePdfDocs(prevDocs => prevDocs.map(doc => 
+        doc.id === pdfId ? { ...doc, pdf: null, data: newPdfBytes } : doc
+      ));
+      showNotification(`Page ${pageNumber} of PDF ID ${pdfId} upscaled and updated!`, 'success');
+
+    } catch (error) {
+      console.error("App.js: Error during single page upscaling and PDF reconstruction:", error);
+      showNotification(`Failed to upscale and update page: ${error.message}`, 'error');
+    } finally {
+      setUpscalingPdfId(null);
+    }
+  };
+
+
+
   const handleCreateWorkspace = async (name) => {
     const newWorkspace = { id: Date.now(), name, pdfDocuments: [], spaces: [], activeSpaceId: null };
     await db.saveWorkspace(newWorkspace);
@@ -816,6 +975,8 @@ function App() {
                   onRemove={removePDF}
                   onPageChange={updatePdfPage}
                   onCapture={handleCapture}
+                  onUpscale={handleUpscale}
+                  isUpscaling={upscalingPdfId === doc.id}
                   onZoomCapture={handleZoomCapture}
                   isZenMode={isZenMode}
                   isSinglePdfZenMode={isSinglePdfZenMode}
