@@ -32,18 +32,89 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
   const [selectedCapture, setSelectedCapture] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [isRotating, setIsRotating] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialTransform, setInitialTransform] = useState(null);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
+  const [rotationInput, setRotationInput] = useState(0); // This line was missing!
+  const [zoomLevel, setZoomLevel] = useState(1); // NEW: State for zoom level
+  const [setZoomOrigin] = useState({ x: 0, y: 0 }); // NEW: State for zoom origin
+  const [pan, setPan] = useState({ x: 0, y: 0 }); // NEW: State for pan offset
 
   // Handle capture selection
   const handleCaptureClick = (e, captureId) => {
     e.stopPropagation();
     setSelectedCapture(captureId);
   };
+  const handleWheel = (e) => {
+    e.preventDefault(); // Prevent page scrolling
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+
+    // Get mouse position relative to the canvas's visual boundaries
+    const mouseX_onCanvas = e.clientX - canvasRect.left;
+    const mouseY_onCanvas = e.clientY - canvasRect.top;
+
+    // Calculate mouse position relative to the *unzoomed, unpanned* A4 content
+    const mouseX_A4 = (mouseX_onCanvas - pan.x) / zoomLevel / (canvasDimensions.scale || 1);
+    const mouseY_A4 = (mouseY_onCanvas - pan.y) / zoomLevel / (canvasDimensions.scale || 1);
+
+    const zoomAmount = 0.1;
+    let newZoomLevel = zoomLevel;
+
+    if (e.deltaY < 0) {
+      newZoomLevel = zoomLevel + zoomAmount;
+    } else {
+      newZoomLevel = zoomLevel - zoomAmount;
+    }
+
+    newZoomLevel = Math.max(0.5, Math.min(newZoomLevel, 3.0));
+
+    // Calculate new pan to keep the mouseX_A4, mouseY_A4 fixed
+    const newPanX = mouseX_onCanvas - (mouseX_A4 * newZoomLevel * (canvasDimensions.scale || 1));
+    const newPanY = mouseY_onCanvas - (mouseY_A4 * newZoomLevel * (canvasDimensions.scale || 1));
+    
+    setPan({ x: newPanX, y: newPanY });
+    setZoomLevel(newZoomLevel);
+    // No need for zoomOrigin with this pan/zoom approach
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      const canvas = canvasRef.current; // Use ref directly
+      if (canvas) {
+        const vh = window.innerHeight;
+        const vw = window.innerWidth;
+        const padding = 200;
+        const baseWidthA4 = A4_WIDTH_MM * MM_TO_PX;
+        const baseHeightA4 = A4_HEIGHT_MM * MM_TO_PX;
+        
+        const scaleW = (vw - padding) / baseWidthA4;
+        const scaleH = (vh - padding) / baseHeightA4;
+        const baseScale = Math.min(scaleW, scaleH, 0.8); // Base scale to fit A4 page
+        
+        // Set canvas dimensions based on baseScale (A4-space px for captures)
+        const currentCanvasWidth = baseWidthA4 * baseScale;
+        const currentCanvasHeight = baseHeightA4 * baseScale;
+
+        // Store the base scale for capture position calculations
+        setCanvasDimensions({ 
+          width: currentCanvasWidth, 
+          height: currentCanvasHeight, 
+          scale: baseScale 
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial call
+    // We no longer depend on zoomLevel here as it's applied via transform directly
+    return () => window.removeEventListener('resize', handleResize);
+  }, [A4_WIDTH_MM, A4_HEIGHT_MM, MM_TO_PX]);
 
   // Start dragging a capture
   const handleMouseDown = (e, captureId) => {
@@ -77,8 +148,6 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
       x: e.clientX,
       y: e.clientY,
       handle,
-      initialWidth: rect.width,
-      initialHeight: rect.height,
       aspectRatio: rect.width / rect.height
     });
     
@@ -88,40 +157,20 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     });
   };
 
-  // Start rotating a capture
-  const handleRotateStart = (e, captureId) => {
-    e.stopPropagation();
-    setIsRotating(true);
-    setSelectedCapture(captureId);
-    
-    const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
-    const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    setDragStart({
-      x: e.clientX,
-      y: e.clientY,
-      centerX,
-      centerY,
-      initialRotation: capture.rotation || 0
-    });
-  };
-
   const handleMouseUp = () => {
     setIsDragging(false);
     setIsResizing(false);
-    setIsRotating(false);
   };
 
   useEffect(() => {
     const handleMouseMove = (e) => {
-      if (!isDragging && !isResizing && !isRotating) return;
+      if (!isDragging && !isResizing) return;
 
       if (isDragging) {
-        const s = (canvasDimensions?.scale || 1);
-        const deltaX = (e.clientX - dragStart.x) / s;
-        const deltaY = (e.clientY - dragStart.y) / s;
+        // NEW: Use combined scale for accurate drag calculation
+        const combinedScale = (canvasDimensions?.scale || 1) * zoomLevel;
+        const deltaX = (e.clientX - dragStart.x) / combinedScale;
+        const deltaY = (e.clientY - dragStart.y) / combinedScale;
 
         setPages(prev => prev.map((page, index) => {
           if (index !== currentPageIndex) return page;
@@ -152,50 +201,51 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
               captures: page.captures.map(capture => {
                 if (capture.id === selectedCapture) {
                   let newScale = { ...initialTransform.scale };
-                  const { handle, initialWidth, initialHeight } = dragStart;
+                  let newPosition = { ...initialTransform.position };
+                  const { handle } = dragStart;
 
-                // Calculate size changes based on handle position
+                  // NEW: Use combined scale for accurate resize calculation
+                  const combinedScale = (canvasDimensions?.scale || 1) * zoomLevel;
+                  const scaledDeltaX = deltaX / combinedScale; // Use combinedScale here
+                  const scaledDeltaY = deltaY / combinedScale; // Use combinedScale here
+
+                  // Calculate current capture dimensions in A4-space before the new scale is applied
+                  const currentCaptureWidthA4 = capture.originalSize.width * initialTransform.scale.x;
+                  const currentCaptureHeightA4 = capture.originalSize.height * initialTransform.scale.y;
+
                   switch(handle) {
                     case 'se':
-                      newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
-                      newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                      newScale.x = initialTransform.scale.x * (1 + scaledDeltaX / currentCaptureWidthA4);
+                      newScale.y = initialTransform.scale.y * (1 + scaledDeltaY / currentCaptureHeightA4);
                       break;
                     case 'sw':
-                      newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
-                      newScale.y = initialTransform.scale.y * (1 + deltaY / initialHeight);
+                      newScale.x = initialTransform.scale.x * (1 - scaledDeltaX / currentCaptureWidthA4);
+                      newScale.y = initialTransform.scale.y * (1 + scaledDeltaY / currentCaptureHeightA4);
+                      newPosition.x = initialTransform.position.x + scaledDeltaX;
                       break;
                     case 'ne':
-                      newScale.x = initialTransform.scale.x * (1 + deltaX / initialWidth);
-                      newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                      newScale.x = initialTransform.scale.x * (1 + scaledDeltaX / currentCaptureWidthA4);
+                      newScale.y = initialTransform.scale.y * (1 - scaledDeltaY / currentCaptureHeightA4);
+                      newPosition.y = initialTransform.position.y + scaledDeltaY;
                       break;
                     case 'nw':
-                      newScale.x = initialTransform.scale.x * (1 - deltaX / initialWidth);
-                      newScale.y = initialTransform.scale.y * (1 - deltaY / initialHeight);
+                      newScale.x = initialTransform.scale.x * (1 - scaledDeltaX / currentCaptureWidthA4);
+                      newScale.y = initialTransform.scale.y * (1 - scaledDeltaY / currentCaptureHeightA4);
+                      newPosition.x = initialTransform.position.x + scaledDeltaX;
+                      newPosition.y = initialTransform.position.y + scaledDeltaY;
                       break;
                     default:
                       break;
                   }
 
-                // Ensure minimum scale (keep your existing guards above)
-                  newScale.x = Math.max(0.1, newScale.x);
-                  newScale.y = Math.max(0.1, newScale.y);
-
-                // Convert screen-px diffs to A4-space px
-                  const s = (canvasDimensions?.scale || 1);
-                  const widthDiffScreen  = (initialWidth  * newScale.x) - (initialWidth  * initialTransform.scale.x);
-                  const heightDiffScreen = (initialHeight * newScale.y) - (initialHeight * initialTransform.scale.y);
-
-                  let positionDelta = { x: 0, y: 0 };
-                  if (handle.includes('w')) positionDelta.x =  widthDiffScreen  / s;
-                  if (handle.includes('n')) positionDelta.y =  heightDiffScreen / s;
+                  // Ensure minimum scale
+                  newScale.x = Math.max(0.05, newScale.x); // Adjusted min scale slightly
+                  newScale.y = Math.max(0.05, newScale.y); // Adjusted min scale slightly
 
                   return {
                     ...capture,
                     scale: newScale,
-                    position: {
-                      x: initialTransform.position.x - positionDelta.x,
-                      y: initialTransform.position.y - positionDelta.y
-                    }
+                    position: newPosition
                   };
                 }
                 return capture;
@@ -206,36 +256,12 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
         }));
       }
 
-      if (isRotating) {
-        const { centerX, centerY, initialRotation } = dragStart;
-        const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-        const startAngle = Math.atan2(dragStart.y - centerY, dragStart.x - centerX);
-        const rotation = initialRotation + (angle - startAngle) * (180 / Math.PI);
-
-        setPages(prev => prev.map((page, index) => {
-          if (index === currentPageIndex) {
-            return {
-              ...page,
-              captures: page.captures.map(capture => {
-                if (capture.id === selectedCapture) {
-                  return {
-                    ...capture,
-                    rotation
-                  };
-                }
-                return capture;
-              })
-            };
-          }
-          return page;
-        }));
-      }
   };
 
     const handleGlobalMouseMove = (e) => handleMouseMove(e);
     const handleGlobalMouseUp = () => handleMouseUp();
 
-    if (isDragging || isResizing || isRotating) {
+    if (isDragging || isResizing) {
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
     }
@@ -244,7 +270,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
       document.removeEventListener('mousemove', handleGlobalMouseMove);
       document.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, isResizing, isRotating, canvasDimensions, currentPageIndex, dragStart, initialTransform, selectedCapture]);
+  }, [isDragging, isResizing, canvasDimensions, currentPageIndex, dragStart, initialTransform, selectedCapture, zoomLevel]);
 
   // Handle click outside to deselect
   const handleContainerClick = (e) => {
@@ -421,6 +447,157 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     }
   };
 
+  const handleCenterSelection = (e) => {
+    e.stopPropagation();
+    if (!selectedCapture || !canvasRef.current) return;
+
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id === selectedCapture) {
+              const canvasRect = canvasRef.current.getBoundingClientRect();
+              const captureOriginalWidth = capture.originalSize.width * capture.scale.x;
+              const captureOriginalHeight = capture.originalSize.height * capture.scale.y;
+
+              const newX = (canvasRect.width / (canvasDimensions?.scale || 1) / 2) - (captureOriginalWidth / 2);
+              const newY = (canvasRect.height / (canvasDimensions?.scale || 1) / 2) - (captureOriginalHeight / 2);
+
+              return {
+                ...capture,
+                position: { x: newX, y: newY }
+              };
+            }
+            return capture;
+          })
+        };
+      }
+      return page;
+    }));
+    showNotification('Capture centered!', 'info');
+  };
+
+  const handleResetRotation = (e) => {
+    e.stopPropagation();
+    if (!selectedCapture) return;
+
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id === selectedCapture) {
+              return {
+                ...capture,
+                rotation: 0
+              };
+            }
+            return capture;
+          })
+        };
+      }
+      return page;
+    }));
+    setRotationInput(0); // Also reset the input field
+    showNotification('Rotation reset!', 'info');
+  };
+
+  const handleRotationInputChange = (e) => {
+    const value = e.target.value;
+    setRotationInput(value); // Update the input state immediately
+
+    if (!selectedCapture) return;
+
+    // Convert to number, default to 0 if invalid
+    const newRotation = parseFloat(value) || 0;
+
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id === selectedCapture) {
+              return {
+                ...capture,
+                rotation: newRotation
+              };
+            }
+            return capture;
+          })
+        };
+      }
+      return page;
+    }));
+  };
+
+  const handleRotate90 = (direction) => {
+    if (!selectedCapture) return;
+
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id === selectedCapture) {
+              let newRotation = capture.rotation || 0;
+              if (direction === 'left') {
+                newRotation = (newRotation - 90) % 360;
+              } else if (direction === 'right') {
+                newRotation = (newRotation + 90) % 360;
+              }
+              setRotationInput(Math.round(newRotation)); // Update input field
+              return {
+                ...capture,
+                rotation: newRotation
+              };
+            }
+            return capture;
+          })
+        };
+      }
+      return page;
+    }));
+    showNotification(`Rotated 90 degrees ${direction}!`, 'info');
+  };
+
+  useEffect(() => {
+    if (selectedCapture) {
+      const capture = pages[currentPageIndex].captures.find(c => c.id === selectedCapture);
+      if (capture) {
+        setRotationInput(Math.round(capture.rotation || 0));
+      }
+    } else {
+      setRotationInput(0); // Reset input when nothing is selected
+    }
+  }, [selectedCapture, currentPageIndex, pages]); // Depend on selectedCapture and pages
+
+
+
+  const handleResetScale = (e) => {
+    e.stopPropagation();
+    if (!selectedCapture) return;
+
+    setPages(prev => prev.map((page, index) => {
+      if (index === currentPageIndex) {
+        return {
+          ...page,
+          captures: page.captures.map(capture => {
+            if (capture.id === selectedCapture) {
+              return {
+                ...capture,
+                scale: { x: 1, y: 1 }
+              };
+            }
+            return capture;
+          })
+        };
+      }
+      return page;
+    }));
+    showNotification('Scale reset to 1:1!', 'info');
+  };
+
   return (
     <div className="page-editor-modal">
       <div className="page-editor">
@@ -452,8 +629,17 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
           </div>
         </div>
         
-        <div className="page-editor-content" ref={containerRef} onClick={handleContainerClick}>
-          <div className="page-editor-canvas" ref={canvasRef}>
+        <div className="page-editor-content" ref={containerRef} onClick={handleContainerClick} onWheel={handleWheel}> 
+          <div 
+            className="page-editor-canvas" 
+            ref={canvasRef}
+            style={{
+              width: `${canvasDimensions.width}px`,
+              height: `${canvasDimensions.height}px`,
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomLevel})`,
+              transformOrigin: '0 0' // Reset to 0 0 as we are handling origin via translation
+            }}
+          >
             {pages[currentPageIndex]?.captures.map(capture => (
               <div
                 key={capture.id}
@@ -483,20 +669,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                       <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, capture.id, 'ne')} />
                       <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
                       <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
-                      <div className="rotate-handle" onMouseDown={(e) => handleRotateStart(e, capture.id)}>⟲</div>
-                      {/* Layering Handles */}
-                      <button className="layer-handle bring-front" onClick={(e) => handleLayerChange(e, capture.id, 'front')} title="Bring to Front">⬆</button>
-                      <button className="layer-handle send-back" onClick={(e) => handleLayerChange(e, capture.id, 'back')} title="Send to Back">⬇</button>
-                      <button className="layer-handle bring-forward" onClick={(e) => handleLayerChange(e, capture.id, 'forward')} title="Bring Forward">⇧</button>
-                      <button className="layer-handle send-backward" onClick={(e) => handleLayerChange(e, capture.id, 'backward')} title="Send Backward">⇩</button>
-                      {/* NEW: Delete Button in Editor */}
-                      <button
-                        className="delete-handle"
-                        onClick={(e) => handleDeleteCaptureLocal(e, capture.id)}
-                        title="Delete Capture from Page"
-                      >
-                        ✕
-                      </button>
+                      {/* Removed: Rotate Handle */}
                     </>
                   )}
                 </div>
@@ -506,9 +679,61 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
         </div>
 
         <div className="page-editor-toolbar">
-          <button className="toolbar-btn" title="Center Selection">⌖</button>
-          <button className="toolbar-btn" title="Reset Rotation">↻</button>
-          <button className="toolbar-btn" title="Reset Scale">1:1</button>
+          <button className="toolbar-btn" title="Zoom Out" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>🔍-</button>
+          <button className="toolbar-btn" title="Reset Zoom" onClick={() => { setZoomLevel(1); setZoomOrigin({ x: 0, y: 0 }); }}>100%</button> {/* NEW: Reset zoomOrigin here */}
+          <button className="toolbar-btn" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(3.0, prev + 0.1))}>🔍+</button>
+
+          <button className="toolbar-btn" title="Center Selection" onClick={handleCenterSelection} disabled={!selectedCapture}>⌖</button>
+          <button className="toolbar-btn" title="Reset Rotation" onClick={handleResetRotation} disabled={!selectedCapture}>↻</button>
+          <button className="toolbar-btn" title="Reset Scale" onClick={handleResetScale} disabled={!selectedCapture}>1:1</button>
+          
+          {/* New Rotation Input and 90-degree buttons */}
+          <button className="toolbar-btn" title="Rotate Left 90°" onClick={() => handleRotate90('left')} disabled={!selectedCapture}>⟲ 90°</button>
+          <input
+            type="number"
+            className="toolbar-input"
+            value={rotationInput}
+            onChange={handleRotationInputChange}
+            disabled={!selectedCapture}
+            placeholder="Rotation"
+            title="Set Rotation Degree"
+            min="-360"
+            max="360"
+          />
+          <button className="toolbar-btn" title="Rotate Right 90°" onClick={() => handleRotate90('right')} disabled={!selectedCapture}>90° ⟳</button>
+
+          <button 
+            className="toolbar-btn" 
+            title="Bring to Front" 
+            onClick={(e) => handleLayerChange(e, selectedCapture, 'front')} 
+            disabled={!selectedCapture}
+          >⬆</button>
+          <button 
+            className="toolbar-btn" 
+            title="Send to Back" 
+            onClick={(e) => handleLayerChange(e, selectedCapture, 'back')} 
+            disabled={!selectedCapture}
+          >⬇</button>
+          <button 
+            className="toolbar-btn" 
+            title="Bring Forward" 
+            onClick={(e) => handleLayerChange(e, selectedCapture, 'forward')} 
+            disabled={!selectedCapture}
+          >⇧</button>
+          <button 
+            className="toolbar-btn" 
+            title="Send Backward" 
+            onClick={(e) => handleLayerChange(e, selectedCapture, 'backward')} 
+            disabled={!selectedCapture}
+          >⇩</button>
+          <button
+            className="toolbar-btn delete-capture"
+            onClick={(e) => handleDeleteCaptureLocal(e, selectedCapture)}
+            title="Delete Capture from Page"
+            disabled={!selectedCapture}
+          >
+            ✕
+          </button>
         </div>
       </div>
     </div>
@@ -516,4 +741,3 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
 }
 
 export default PageEditor;
-
