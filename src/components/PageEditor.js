@@ -276,6 +276,8 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
   const handleContainerClick = (e) => {
     if (e.target === containerRef.current) {
       setSelectedCapture(null);
+      setPan({ x: 0, y: 0 }); // NEW: Reset pan when deselecting
+      setZoomLevel(1);       // NEW: Reset zoom when deselecting
     }
   };
 
@@ -284,6 +286,8 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     if (currentPageIndex < pages.length - 1) {
       setCurrentPageIndex(prev => prev + 1);
       setSelectedCapture(null);
+      setPan({ x: 0, y: 0 });   // NEW: Reset pan on page change
+      setZoomLevel(1);       // NEW: Reset zoom on page change
     }
   };
 
@@ -291,6 +295,8 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     if (currentPageIndex > 0) {
       setCurrentPageIndex(prev => prev - 1);
       setSelectedCapture(null);
+      setPan({ x: 0, y: 0 });   // NEW: Reset pan on page change
+      setZoomLevel(1);       // NEW: Reset zoom on page change
     }
   };
 
@@ -450,6 +456,13 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
   const handleCenterSelection = (e) => {
     e.stopPropagation();
     if (!selectedCapture || !canvasRef.current) return;
+
+    const capture = pages[currentPageIndex].captures.find(c => c.id === selectedCapture);
+    if (!capture) return;
+
+    // Calculate the new position to center the capture within the A4 page (A4-space coordinates)
+    const newX = 0; // Manually set to 0 for debugging
+    const newY = 0; // Manually set to 0 for debugging
 
     setPages(prev => prev.map((page, index) => {
       if (index === currentPageIndex) {
@@ -641,39 +654,38 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
             }}
           >
             {pages[currentPageIndex]?.captures.map(capture => (
-              <div
-                key={capture.id}
-                className={`capture-container ${selectedCapture === capture.id ? 'selected' : ''}`}
-                style={{
-                  transform: `translate(${(capture.position.x) * (canvasDimensions?.scale || 1)}px, ${(capture.position.y) * (canvasDimensions?.scale || 1)}px)`,
-                }}
-                onMouseDown={(e) => handleMouseDown(e, capture.id)}
-                onClick={(e) => handleCaptureClick(e, capture.id)}
-              >
                 <div
-                  className="capture-wrapper"
+                  key={capture.id}
+                  className={`capture-container ${selectedCapture === capture.id ? 'selected' : ''}`}
                   style={{
-                    transform: `scale(${capture.scale.x}, ${capture.scale.y}) rotate(${capture.rotation}deg)`,
+                  transform: `translate(${(capture.position.x) * (canvasDimensions?.scale || 1)}px, ${(capture.position.y) * (canvasDimensions?.scale || 1)}px)`,
                   }}
+                  onMouseDown={(e) => handleMouseDown(e, capture.id)}
+                  onClick={(e) => handleCaptureClick(e, capture.id)}
                 >
-                  <img
-                    src={capture.imageData}
-                    alt="Captured content"
-                    className="capture-image"
-                    draggable={false}
-                  />
-                  
-                  {selectedCapture === capture.id && (
-                    <>
-                      <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'nw')} />
-                      <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, capture.id, 'ne')} />
-                      <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
-                      <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
-                      {/* Removed: Rotate Handle */}
-                    </>
-                  )}
+                  <div
+                    className="capture-wrapper"
+                    style={{
+                      transform: `scale(${capture.scale.x}, ${capture.scale.y}) rotate(${capture.rotation}deg)`,
+                    }}
+                  >
+                    <img
+                      src={capture.imageData}
+                      alt="Captured content"
+                      className="capture-image"
+                      draggable={false}
+                    />
+                    
+                    {selectedCapture === capture.id && (
+                      <>
+                        <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'nw')} />
+                        <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, capture.id, 'ne')} />
+                        <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
+                        <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
             ))}
           </div>
         </div>
