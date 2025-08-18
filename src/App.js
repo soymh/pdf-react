@@ -252,9 +252,6 @@ function App() {
       console.log("App.js: Original PDF data fetched from DB.");
 
       const originalPdfBytes = pdfRecord.data;
-      const pdfjsDoc = await getDocument({ data: originalPdfBytes }).promise;
-      const totalPages = pdfjsDoc.numPages;
-      console.log(`App.js: Original PDF has ${totalPages} pages.`);
 
       console.log("App.js: Calling upscaleImage module...");
 
@@ -286,94 +283,47 @@ function App() {
       const upscaledPngDataUrl = upscaledCanvas.toDataURL('image/png');
       console.log("App.js: Upscaled image converted to PNG Data URL. Length:", upscaledPngDataUrl.length);
 
-      const newPdfDoc = await PDFDocument.create();
-      console.log("App.js: Created new PDFDocument for reconstruction.");
+      // --- Efficient PDF Reconstruction with pdf-lib ---
+      console.log("App.js: Loading original PDF with pdf-lib for modification.");
+      const pdfDoc = await PDFDocument.load(originalPdfBytes);
 
-      for (let i = 1; i <= totalPages; i++) {
-        if (i === pageNumber) {
-          // This is the page to replace with the upscaled image
-          console.log(`App.js: Embedding upscaled image for page ${i}.`);
-          const image = await newPdfDoc.embedPng(upscaledPngDataUrl);
-          const page = newPdfDoc.addPage();
-          
-          const { width: imgWidth, height: imgHeight } = image;
-          const pageWidth = page.getWidth();
-          const pageHeight = page.getHeight();
+      // Embed the upscaled image
+      console.log(`App.js: Embedding upscaled image into PDF.`);
+      const upscaledImage = await pdfDoc.embedPng(upscaledPngDataUrl);
 
-          const imgAspectRatio = imgWidth / imgHeight;
-          const pageAspectRatio = pageWidth / pageHeight;
+      // Calculate dimensions for drawing the image on the page
+      const { width: imgWidth, height: imgHeight } = upscaledImage;
+      const originalPage = pdfDoc.getPages()[pageNumber - 1]; // Page number is 1-indexed for user, 0-indexed for pdf-lib
+      const pageWidth = originalPage.getWidth();
+      const pageHeight = originalPage.getHeight();
 
-          let finalWidth = pageWidth;
-          let finalHeight = pageHeight;
+      const imgAspectRatio = imgWidth / imgHeight;
+      const pageAspectRatio = pageWidth / pageHeight;
 
-          if (imgAspectRatio > pageAspectRatio) {
-            finalHeight = pageWidth / imgAspectRatio;
-          } else {
-            finalWidth = pageHeight * imgAspectRatio;
-          }
+      let finalWidth = pageWidth;
+      let finalHeight = pageHeight;
 
-          page.drawImage(image, {
-            x: (pageWidth - finalWidth) / 2,
-            y: (pageHeight - finalHeight) / 2,
-            width: finalWidth,
-            height: finalHeight,
-          });
-          console.log(`App.js: Upscaled image embedded on page ${i}.`)
-        } else {
-          // For other pages, render original page to canvas and embed
-          console.log(`App.js: Re-embedding original page ${i}.`);
-          const originalPage = await pdfjsDoc.getPage(i);
-          const viewport = originalPage.getViewport({ scale: 2.0 }); // Render at a good quality
-
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-
-          await originalPage.render({ canvasContext: context, viewport: viewport }).promise;
-          const originalPageImageData = context.getImageData(0, 0, canvas.width, canvas.height);
-          
-          // Convert original page ImageData to PNG Data URL before embedding
-          console.log(`App.js: Converting original page ${i} ImageData to PNG Data URL...`);
-          const originalPageCanvas = document.createElement('canvas');
-          originalPageCanvas.width = originalPageImageData.width;
-          originalPageCanvas.height = originalPageImageData.height;
-          const originalPageContext = originalPageCanvas.getContext('2d');
-          originalPageContext.putImageData(originalPageImageData, 0, 0);
-          const originalPagePngDataUrl = originalPageCanvas.toDataURL('image/png');
-          console.log(`App.js: Original page ${i} converted to PNG Data URL. Length: ${originalPagePngDataUrl.length}`);
-
-          const image = await newPdfDoc.embedPng(originalPagePngDataUrl); // Embed original page image as Data URL
-          const page = newPdfDoc.addPage();
-
-          const { width: imgWidth, height: imgHeight } = image;
-          const pageWidth = page.getWidth();
-          const pageHeight = page.getHeight();
-
-          const imgAspectRatio = imgWidth / imgHeight;
-          const pageAspectRatio = pageWidth / pageHeight;
-
-          let finalWidth = pageWidth;
-          let finalHeight = pageHeight;
-
-          if (imgAspectRatio > pageAspectRatio) {
-            finalHeight = pageWidth / imgAspectRatio;
-          } else {
-            finalWidth = pageHeight * imgAspectRatio;
-          }
-
-          page.drawImage(image, {
-            x: (pageWidth - finalWidth) / 2,
-            y: (pageHeight - finalHeight) / 2,
-            width: finalWidth,
-            height: finalHeight,
-          });
-          console.log(`App.js: Original page ${i} re-embedded.`);
-        }
+      if (imgAspectRatio > pageAspectRatio) {
+        finalHeight = pageWidth / imgAspectRatio;
+      } else {
+        finalWidth = pageHeight * imgAspectRatio;
       }
-      
+
+      // Remove the original page
+      pdfDoc.removePage(pageNumber - 1); // Remove the 0-indexed page
+
+      // Add a new blank page at the same position and draw the upscaled image on it
+      const newPage = pdfDoc.insertPage(pageNumber - 1); // Insert at the original position
+      newPage.drawImage(upscaledImage, {
+        x: (pageWidth - finalWidth) / 2,
+        y: (pageHeight - finalHeight) / 2,
+        width: finalWidth,
+        height: finalHeight,
+      });
+      console.log(`App.js: Page ${pageNumber} replaced with upscaled image.`);
+
       console.log("App.js: Saving new PDF bytes...");
-      const newPdfBytes = await newPdfDoc.save();
+      const newPdfBytes = await pdfDoc.save();
       console.log("App.js: New PDF bytes saved. Size:", newPdfBytes.byteLength);
 
       // Overwrite the original PDF in DB with the new PDF data

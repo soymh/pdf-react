@@ -66,6 +66,8 @@ async function upscaleImageFunction(image, model, alpha = false) {
     if (alpha) {
       result = tf.greater(result, 0.5);
     }
+    // Dispose the input tensor immediately after prediction
+    tensor.dispose(); 
     return result;
   });
   const resultImage = await tensor2img(result);
@@ -136,11 +138,11 @@ async function enlargeImageWithFixedInput(model, inputImg, factor = 4, input_siz
   } else {
     for (let i = 0; i < num_x; i++) {
       for (let j = 0; j < num_y; j++) {
-        console.log(`Worker: Processing tile ${current + 1}/${total} (${i},${j})...`);
         const x1 = locs_x[i];
         const y1 = locs_y[j];
         const x2 = locs_x[i] + input_size;
         const y2 = locs_y[j] + input_size;
+        console.log(`Worker: Processing tile ${current + 1}/${total} (${i},${j})...`);
         const tile = new Img(input_size, input_size);
         tile.getImageCrop(0, 0, inputImg, x1, y1, x2, y2);
         console.log(`Worker: Upscaling tile (${i},${j})...`);
@@ -243,13 +245,19 @@ addEventListener('message', async (e) => {
   });
   
   console.log("Worker: Sending final upscaled image data back to main thread.");
+  // Create a new Uint8ClampedArray from output.data, then get its buffer for transfer.
+  // This ensures a complete, independent copy for safe transfer.
+  const finalUpscaledPixels = new Uint8ClampedArray(output.data);
+  const outputBufferToTransfer = finalUpscaledPixels.buffer;
+
   postMessage(
     {
       progress: 100,
       done: true,
-      output: output.data.buffer,
+      output: outputBufferToTransfer, // Transfer the buffer of the new Uint8ClampedArray
       info: `Upscaling complete!`
     },
-    [output.data.buffer]
+    [outputBufferToTransfer] // Mark this new buffer as transferable
   );
 });
+
