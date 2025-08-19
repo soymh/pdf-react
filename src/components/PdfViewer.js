@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 
-function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, upscaleProgress, upscaleMessage, index, isZenMode, isSinglePdfZenMode }) {
+// Destructure scale and onScaleChange from props
+function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, upscaleProgress, upscaleMessage, index, isZenMode, isSinglePdfZenMode, scale, onScaleChange }) {
   const canvasRef = useRef(null);
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
-  const [scale, setScale] = useState(1);
+  // Remove local scale state: const [scale, setScale] = useState(1);
 
   // Ref to hold the current page's rendered ImageData for upscaling
   const currentPageImageDataRef = useRef(null);
@@ -18,7 +19,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
         return;
       }
     
-      console.log(`PdfViewer ${pdfData.id}: Render attempt - Page: ${pdfData.currentPage}, Total: ${pdfData.totalPages}`);
+      console.log(`PdfViewer ${pdfData.id}: Render attempt - Page: ${pdfData.currentPage}, Total: ${pdfData.totalPages}, Scale: ${scale}`);
 
       if (pdfData.pdf.isDestroyed) {
         console.warn(`PdfViewer ${pdfData.id}: Attempted to render a destroyed PDF, skipping.`);
@@ -237,14 +238,15 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
     }
   }, [onPageChange, pdfData.id, pdfData.currentPage, pdfData.totalPages]);
 
+  // Use onScaleChange prop to report scale changes
   const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 3));
+    onScaleChange(pdfData.id, Math.min(scale + 0.25, 5));
   };
   const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
+    onScaleChange(pdfData.id, Math.max(scale - 0.25, 0.5));
   };
   const handleResetZoom = () => {
-    setScale(1);
+    onScaleChange(pdfData.id, 1);
   };
 
   const handleDownload = () => {
@@ -276,9 +278,15 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
       <div className="pdf-header">
         <div className="pdf-title" title={pdfData.name}>{pdfData.name}</div>
         <div className="pdf-controls">
-          <button className="pdf-nav-btn" onClick={handleZoomOut} title="Zoom Out">-</button>
-          <button className="pdf-nav-btn" onClick={handleResetZoom} title="Reset Zoom">⚬</button>
-          <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">+</button>
+          <button className="pdf-nav-btn" onClick={handleZoomOut} title="Zoom Out">
+            -
+          </button>
+          <button className="pdf-nav-btn" onClick={handleResetZoom} title="Reset Zoom">
+            ⚬
+          </button>
+          <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">
+            +
+          </button>
           <button
             className="pdf-nav-btn"
             onClick={handleUpscaleClick}

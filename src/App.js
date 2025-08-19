@@ -59,6 +59,7 @@ function App() {
   const [upscaleMessageIndex, setUpscaleMessageIndex] = useState(0); // New state for message index
   const [showSettingsMenu, setShowSettingsMenu] = useState(false); // State for settings menu visibility
   const [upscalingBackend, setUpscalingBackend] = useState('webgpu'); // Default upscaling backend
+  const [pdfScales, setPdfScales] = useState({});
   const upscaleMessages = useRef([ // Messages for the upscaling overlay
     "Sit back while the page scales up!",
     "Your eyes thank you!",
@@ -157,12 +158,20 @@ function App() {
       });
       pdfCacheRef.current.clear();
       loadedPdfIdsRef.current = [];
+      setPdfScales({}); // Clear scales when no active workspace
       return;
     }
 
     const currentPdfInfos = activeWorkspace.pdfDocuments || [];
     const currentPdfIds = currentPdfInfos.map(doc => doc.id).sort();
     const previousPdfIds = loadedPdfIdsRef.current.sort();
+
+    // Initialize pdfScales for new PDFs or load existing scales
+    const newPdfScales = {};
+    currentPdfInfos.forEach(docInfo => {
+      newPdfScales[docInfo.id] = docInfo.scale || 1; // Load existing scale or default to 1
+    });
+    setPdfScales(newPdfScales);
 
     const pdfsToKeepIds = new Set(currentPdfIds);
     pdfCacheRef.current.forEach((pdf, id) => {
@@ -208,7 +217,8 @@ function App() {
 
           if (pdf) {
             const currentPage = docInfo.currentPage || 1;
-            return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages, data: pdfDataFromDb }; // Pass the ArrayBuffer here
+            // Pass the ArrayBuffer here and also the stored scale
+            return { id: docInfo.id, name: docInfo.name, pdf, currentPage, totalPages: pdf.numPages, data: pdfDataFromDb, scale: docInfo.scale || 1 };
           }
           return null;
         })
@@ -330,17 +340,31 @@ function App() {
       console.log(`App.js: Overwriting PDF ID ${pdfId} in DB.`);
       await db.savePdf({ id: pdfId, data: newPdfBytes });
       
-      // Invalidate PDF.js cache for this PDF and reload it to reflect changes
-      console.log(`App.js: Invalidating PDF cache for ID ${pdfId} and triggering reload.`);
+      // Invalidate PDF.js cache for this PDF
+      console.log(`App.js: Invalidating PDF cache for ID ${pdfId}.`);
       const pdfInstanceToDestroy = pdfCacheRef.current.get(pdfId);
       if (pdfInstanceToDestroy) {
         try { pdfInstanceToDestroy.destroy(); } catch (e) { console.warn("Error destroying old PDF instance:", e); }
         pdfCacheRef.current.delete(pdfId);
       }
-      // Trigger re-load of the specific PDF document in livePdfDocs
+
+      // Re-load the PDF.js document to reflect changes
+      console.log(`App.js: Re-loading PDF ID ${pdfId} to reflect upscaled page.`);
+      const updatedPdfRecord = await db.getPdf(pdfId);
+      if (!updatedPdfRecord || !updatedPdfRecord.data) {
+        throw new Error("Updated PDF data not found in DB after save.");
+      }
+      const newPdfInstance = await getDocument(updatedPdfRecord.data).promise;
+      pdfCacheRef.current.set(pdfId, newPdfInstance); // Cache the new instance
+
+      // Update livePdfDocs with the new PDF.js instance
       setLivePdfDocs(prevDocs => prevDocs.map(doc => 
-        doc.id === pdfId ? { ...doc, pdf: null, data: newPdfBytes } : doc
+        doc.id === pdfId ? { ...doc, pdf: newPdfInstance, data: newPdfBytes } : doc
       ));
+      
+      // Explicitly update the page to trigger re-render in PdfViewer if needed
+      await updatePdfPage(pdfId, pageNumber);
+
       setUpscaleProgress(100); // Ensure progress is 100% on success
       showNotification(`Page ${pageNumber} of PDF ID ${pdfId} upscaled and updated!`, 'success');
 
@@ -369,11 +393,26 @@ function App() {
     localStorage.setItem('pdfLastActiveWorkspaceId', JSON.stringify(id));
   };
   
-  const updateWorkspace = async (updater) => {
+  const updateWorkspace = useCallback(async (updater) => {
     const updatedWorkspace = updater(activeWorkspace);
     await db.saveWorkspace(updatedWorkspace);
     setWorkspaces(prev => prev.map(w => w.id === activeWorkspaceId ? updatedWorkspace : w));
-  };
+  }, [activeWorkspace, activeWorkspaceId]);
+
+  const handlePdfScaleChange = useCallback(async (pdfId, newScale) => {
+    setPdfScales(prevScales => ({
+      ...prevScales,
+      [pdfId]: newScale
+    }));
+
+    // Persist the new scale in the active workspace's pdfDocuments
+    await updateWorkspace(w => ({
+      ...w,
+      pdfDocuments: w.pdfDocuments.map(doc =>
+        doc.id === pdfId ? { ...doc, scale: newScale } : doc
+      ),
+    }));
+  }, [updateWorkspace]);
 
   const handleZoomCapture = useCallback((capture) => {
     setZoomedCapture(capture);
@@ -399,7 +438,8 @@ function App() {
       const arrayBuffer = await file.arrayBuffer();
       const pdfId = Date.now() + Math.random();
       await db.savePdf({ id: pdfId, data: arrayBuffer });
-      newPdfInfos.push({ id: pdfId, name: file.name });
+      // Store default scale (1) when initially loading a PDF
+      newPdfInfos.push({ id: pdfId, name: file.name, scale: 1 });
     }
     await updateWorkspace(w => ({
       ...w,
@@ -414,6 +454,12 @@ function App() {
       ...w,
       pdfDocuments: w.pdfDocuments.filter(doc => doc.id !== pdfId),
     }));
+    // Remove the scale for the deleted PDF
+    setPdfScales(prev => {
+      const newScales = { ...prev };
+      delete newScales[pdfId];
+      return newScales;
+    });
   };
 
   const updatePdfPage = async (pdfId, newPage) => {
@@ -772,7 +818,8 @@ function App() {
             return {
               ...docInfo,
               data: base64Pdf, // Embed the base64 PDF binary
-              currentPage: docInfo.currentPage // Ensure current page is included (already there)
+              currentPage: docInfo.currentPage, // Ensure current page is included (already there)
+              scale: docInfo.scale || 1 // Ensure scale is included in export
             };
           }
           return docInfo; // Return original info if binary not found (though it should be)
@@ -839,7 +886,8 @@ function App() {
                 newPdfDocumentsMetadata.push({
                     id: newPdfId,
                     name: docInfo.name,
-                    currentPage: docInfo.currentPage || 1 // Keep current page
+                    currentPage: docInfo.currentPage || 1, // Keep current page
+                    scale: docInfo.scale || 1 // Import scale, or default to 1
                 });
             } else {
                 // If no binary data, treat as a broken reference or older export, generate new ID
@@ -848,7 +896,8 @@ function App() {
                 newPdfDocumentsMetadata.push({
                     id: newPdfId,
                     name: docInfo.name,
-                    currentPage: docInfo.currentPage || 1
+                    currentPage: docInfo.currentPage || 1,
+                    scale: docInfo.scale || 1
                 });
                 showNotification(`PDF "${docInfo.name}" had no binary data. Re-import PDF if needed.`, 'warning');
             }
@@ -975,6 +1024,8 @@ function App() {
                   onZoomCapture={handleZoomCapture}
                   isZenMode={isZenMode}
                   isSinglePdfZenMode={isSinglePdfZenMode}
+                  scale={pdfScales[doc.id] || 1} // Pass the scale from state
+                  onScaleChange={handlePdfScaleChange} // Pass the handler for scale changes
                 />
               ))
             ) : (

@@ -734,7 +734,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
         <div className="page-editor-toolbar">
           <button className="toolbar-btn" title="Zoom Out" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>🔍-</button>
           <button className="toolbar-btn" title="Reset Zoom" onClick={() => { setZoomLevel(1);setPan({ x: 0, y: 0 });}}>100%</button> {/* NEW: Reset zoomOrigin here */}
-          <button className="toolbar-btn" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(3.0, prev + 0.1))}>🔍+</button>
+          <button className="toolbar-btn" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(4.0, prev + 0.1))}>🔍+</button>
 
           <button className="toolbar-btn" title="Center Selection" onClick={handleCenterSelection} disabled={!selectedCapture}>⌖</button>
           <button className="toolbar-btn" title="Reset Rotation" onClick={handleResetRotation} disabled={!selectedCapture}>↻</button>
