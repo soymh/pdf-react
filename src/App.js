@@ -39,7 +39,18 @@ import WorkspacesPanel from './components/WorkspacesPanel';
 import Notification from './components/Notification';
 import SettingsMenu from './components/SettingsMenu'; // Import SettingsMenu
 import upscaleImage from './upscaleImage'; // Import the new upscaleImage module
-import './App.css';
+import './components/styles/body.css';
+// import './components/styles/cyber-button.css'; //Not needed
+// import './components/styles/modals.css'; //Not needed
+import './components/styles/notification.css';
+// import './components/styles/pdf-viewer.css'; //Not needed
+import './components/styles/pdf-viewers.css';
+// import './components/styles/selection.css'; //Not needed
+import './components/styles/settings-button.css';
+// import './components/styles/spaces-panel.css'; //Not needed
+import './components/styles/upscale.css';
+import './components/styles/workspaces.css';
+import './components/styles/zen-mode.css';
 
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 

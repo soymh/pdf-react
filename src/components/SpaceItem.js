@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ReactSortable } from 'react-sortablejs';
 import { createPortal } from 'react-dom';
 import PageEditor from './PageEditor';
+import './styles/spaces-panel.css';
 
 function SpaceItem({
   space,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
+import './styles/body.css';
 
 
 function Header({ onLoadClick, onCreateSpace, onCreateWorkspace, onClearAll, isZenMode }) {

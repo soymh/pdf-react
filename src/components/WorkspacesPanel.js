@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './styles/workspaces.css';
 
 function WorkspacesPanel({
   workspaces,

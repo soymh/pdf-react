@@ -1,0 +1,278 @@
+.spaces-panel {
+        /* --- Core Positioning --- */
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 20;
+  
+      /* --- Sizing and Style --- */
+      width: 300px;
+      background: rgba(15, 52, 96, 0.9);
+      border-left: 2px solid #9333ea;
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+  
+      /* --- Animation --- */
+      transform: translateX(calc(100% - 25px));
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      cursor: pointer;
+        }
+
+        /* --- NEW: Add class-based expansion instead of hover --- */
+    .spaces-panel.expanded {
+      transform: translateX(0);
+      cursor: default;
+      }
+      /* --- Keep the old hover as fallback but with lower priority --- */
+      .spaces-panel:hover:not(.dragging) {
+      transform: translateX(0);
+      cursor: default;
+      }
+	.spaces-header {
+	  background: rgba(83, 52, 131, 0.9);
+	  padding: 15px;
+	  border-bottom: 1px solid #9333ea;
+	  display: flex;
+	  justify-content: space-between;
+	  align-items: center;
+	  /* --- Add a transition for its children --- */
+	  transition: all 0.3s ease;
+	}
+
+	/* --- add these new rules to handle the header text and button --- */
+	/* style the header text when the panel is collapsed */
+	.spaces-panel .spaces-header > span {
+	  writing-mode: vertical-rl; /* make text vertical */
+	  transform: rotate(180deg);
+	  position: absolute;
+	  left: 2px;
+	  top: 50%;
+	  transform-origin: center;
+	  margin-top: -50px; /* adjust vertical centering */
+	  text-shadow: 0 0 5px #9333ea;
+	  transition: opacity 0.3s ease;
+	  opacity: 1; /* make it visible by default */
+	}
+
+	/* hide the vertical text and the "add" button when expanded */
+    .spaces-panel .spaces-header > span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform-origin: center;
+    margin-top: -50px;
+    text-shadow: 0 0 5px #9333ea;
+    transition: opacity 0.3s ease;
+    opacity: 1;
+    }
+
+    .spaces-panel:hover .spaces-header > span,
+    .spaces-panel.expanded .spaces-header > span {
+    opacity: 0;
+    }
+
+    .spaces-panel:hover .spaces-header::before,
+    .spaces-panel.expanded .spaces-header::before {
+    content: '🎯 spaces';
+    opacity: 1;
+    }
+
+    .spaces-panel .spaces-header > .cyber-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    }
+
+    .spaces-panel:hover .spaces-header > .cyber-button,
+    .spaces-panel.expanded .spaces-header > .cyber-button {
+    opacity: 1;
+    pointer-events: auto;
+    }
+
+    /* --- Add drag-specific styles --- */
+    .spaces-panel.dragging {
+    transform: translateX(0) !important;
+    }
+
+    .capture-thumbnail.dragging {
+    z-index: 1000;
+    }
+	.spaces-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .space-item {
+            background: rgba(22, 33, 62, 0.8);
+            border: 1px solid #9333ea;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .space-item:hover {
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .space-header {
+            background: rgba(83, 52, 131, 0.7);
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .space-name {
+            font-size: 14px;
+            color: #e0e6ff;
+        }
+
+        .space-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .space-btn {
+            background: rgba(147, 51, 234, 0.3);
+            border: 1px solid #9333ea;
+            color: #e0e6ff;
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.3s ease;
+            border-radius: 8px; 
+        }
+
+        .space-btn:hover {
+            background: rgba(147, 51, 234, 0.6);
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
+        }
+
+        .space-content {
+            padding: 10px;
+            display: none;
+            min-height: 100px;
+            background: rgba(10, 10, 10, 0.3);
+        }
+
+        .space-content.active {
+            display: block;
+        }
+
+        .captured-image {
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 4px;
+            cursor: grab;
+            transition: all 0.3s ease;
+        }
+
+        .captured-image:hover {
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+            transform: scale(1.02);
+        }
+
+        .captured-image.dragging {
+            cursor: grabbing;
+            opacity: 0.8;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 52, 96, 0.95);
+            border: 2px solid #9333ea;
+            border-radius: 12px;
+            padding: 30px;
+            min-width: 400px;
+            box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
+        }
+
+        .modal h3 {
+            color: #e0e6ff;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 15px #9333ea;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(22, 33, 62, 0.8);
+            border: 1px solid #9333ea;
+            color: #e0e6ff;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-family: inherit;
+        }
+
+        .modal input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .modal-actions button {
+            border-radius: 12px; 
+        }        
+
+        .glow {
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px rgba(147, 51, 234, 0.4);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
+            }
+        }
+
+        .pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }

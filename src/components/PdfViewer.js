@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import './styles/pdf-viewer.css';
+import './styles/upscale.css';
 
 // Destructure scale and onScaleChange from props
 function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUpscaling, upscaleProgress, upscaleMessage, index, isZenMode, isSinglePdfZenMode, scale, onScaleChange }) {

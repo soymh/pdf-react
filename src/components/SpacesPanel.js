@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SpaceItem from './SpaceItem';
+import './styles/spaces-panel.css';
 
 function SpacesPanel({ 
   spaces, 

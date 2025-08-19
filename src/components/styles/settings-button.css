@@ -1,0 +1,133 @@
+.settings-button {
+  width: 30px;
+  height: 30px;
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+
+  /* The Fix: Make the button container invisible */
+  background: transparent;
+  border: none;
+  outline: none;
+
+  /* The Glow Effect & Shape */
+  border-radius: 50%; /* Keep the shadow circular */
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.8), 0 0 4px rgba(255, 0, 255, 0.5);
+
+  /* The Icon Color */
+  color: white;
+
+  /* Interaction */
+  transition: all 0.3s ease;
+
+  fill: currentColor;
+}
+
+.settings-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 1), 0 0 6px rgba(255, 0, 255, 0.7);
+}
+
+.settings-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+  backdrop-filter: blur(5px);
+}
+
+.settings-menu-content {
+  background: #1a1a2e;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(255, 0, 255, 0.5);
+  color: #00FFFF;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  border: 2px solid #00FFFF;
+}
+
+.settings-menu-content h3 {
+  color: #FF00FF;
+  margin-bottom: 25px;
+  text-shadow: 0 0 8px #FF00FF;
+}
+
+.setting-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.setting-group h4 {
+  color: #00FFFF;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  border-bottom: 1px dashed #00FFFF;
+  padding-bottom: 5px;
+}
+
+.setting-group label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.95em;
+  cursor: pointer;
+  color: #B0E0E6; /* Light cyan for text */
+}
+
+.setting-group input[type="radio"] {
+  margin-right: 10px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #00FFFF;
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.setting-group input[type="radio"]:checked {
+  background-color: #FF00FF;
+  border-color: #FF00FF;
+  box-shadow: 0 0 5px #FF00FF, 0 0 10px #FF00FF inset;
+}
+
+.setting-group input[type="radio"]:checked::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+
+.settings-menu-content .cyber-button {
+  margin-top: 25px;
+  width: 100%;
+}
+
+.workspaces-panel-header-buttons {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: transparent;
+  z-index: 1001; 
+}

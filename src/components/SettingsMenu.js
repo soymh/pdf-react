@@ -1,4 +1,5 @@
 import React from 'react';
+import './styles/settings-button.css'
 
 function SettingsMenu({ currentBackend, onBackendChange, onClose }) {
   return (

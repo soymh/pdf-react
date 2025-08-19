@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import './styles/modals.css'
 function CreateWorkspaceModal({ onConfirm, onCancel }) {
   const [name, setName] = useState('');
   const inputRef = useRef(null);

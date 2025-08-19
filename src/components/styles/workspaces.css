@@ -1,0 +1,191 @@
+        .workspaces-panel {
+            position: fixed; /* Changed from absolute */
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 25;
+            width: 250px;
+            background: rgba(10, 10, 20, 0.95);
+            border-right: 2px solid #9333ea;
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+            /* --- New animation properties --- */
+            transform: translateX(calc(-100% + 30px));
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .workspaces-panel:hover,
+        .workspaces-panel.expanded { /* Add class for pinned state */
+            transform: translateX(0);
+        }
+
+        .workspaces-header {
+        font-size: 20px;
+        text-align: center;
+        padding: 15px;
+        color: #e0e6ff;
+        text-shadow: 0 0 15px #9333ea;
+        border-bottom: 1px solid rgba(147, 51, 234, 0.4);
+        }
+
+        .workspaces-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px; /* Space between workspace items */
+        padding: 15px; /* Add padding to the list itself */
+        margin-top: 0; /* Remove top margin if inherited */
+        flex: 1; /* Allow the list to take available space */
+        overflow-y: auto; /* Allow scrolling if many workspaces */
+        }
+
+        .workspace-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between; /* Pushes name/input to left, delete to right */
+        padding: 8px 12px;
+        border: 1px solid var(--cyber-border-color);
+        border-radius: 6px;
+        background-color: var(--cyber-panel-bg);
+        cursor: pointer; /* Overall item is clickable to set active */
+        transition: all 0.2s ease-in-out;
+        position: relative; /* IMPORTANT: Allows delete button to be absolutely positioned within it */
+        overflow: hidden; /* Hide overflow content if name is too long */
+        }
+
+        .workspace-item:hover {
+        background-color: var(--cyber-hover-bg);
+        border-color: var(--cyber-accent-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .workspace-item.active {
+        background-color: var(--cyber-active-bg);
+        border-color: var(--cyber-active-border);
+        box-shadow: 0 0 15px var(--cyber-glow-color);
+        }
+
+        .workspace-name-display {
+        flex-grow: 1; /* Allows name to take available space */
+        padding-right: 10px; /* Space before delete button area */
+        white-space: nowrap; /* Prevents text wrapping */
+        overflow: hidden; /* Hides overflowing text */
+        text-overflow: ellipsis; /* Adds "..." for overflow */
+        font-weight: bold;
+        color: var(--cyber-text-color-light);
+        transition: color 0.2s ease;
+        }
+
+        .workspace-name-display:hover {
+        color: var(--cyber-accent-color); /* Change color on hover to indicate clickability for rename */
+        }
+
+        .workspace-rename-input {
+        flex-grow: 1;
+        background-color: var(--cyber-input-bg);
+        border: 1px solid var(--cyber-border-color);
+        border-radius: 4px;
+        color: var(--cyber-text-color-light);
+        padding: 4px 8px;
+        font-size: 1em;
+        font-family: 'Share Tech Mono', monospace; /* Keep consistent font */
+        outline: none;
+        margin-right: 10px; /* Space before delete button */
+        }
+
+        .workspace-rename-input:focus {
+        border-color: var(--cyber-glow-color);
+        box-shadow: 0 0 5px var(--cyber-glow-color);
+        }
+
+        .workspace-delete-btn {
+        background: none;
+        border: none;
+        color: var(--cyber-delete-icon-color);
+        font-size: 1.2em;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0; /* Hidden by default */
+        transition: opacity 0.2s ease-in-out;
+        border-radius: 50%;
+        /* position: absolute; 
+        /* right: 5px; */
+        /* top: 50%; */
+        /* transform: translateY(-50%); */
+        }
+
+        .workspace-item:hover .workspace-delete-btn {
+        opacity: 1; /* Show on hover of the entire workspace item */
+        }
+
+        .workspace-delete-btn:hover {
+        color: var(--cyber-delete-icon-hover-color);
+        transform: scale(1.1);
+        }
+
+        .workspace-tab {
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        background: rgba(22, 33, 62, 0.7);
+        border: 1px solid rgba(147, 51, 234, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 16px;
+        }
+
+        .workspace-tab:hover {
+        background: rgba(83, 52, 131, 0.6);
+        border-color: #9333ea;
+        transform: translateX(5px);
+        }
+
+        .workspace-tab.active {
+        background: #9333ea;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 0 20px rgba(147, 51, 234, 0.7);
+        }
+
+        /* Adjustments for the action buttons at the bottom of the panel */
+        .workspace-action-btn {
+            width: calc(100% - 30px); /* Adjust width to account for panel padding */
+            margin: 0 15px 10px 15px; /* Add margin for spacing and align with panel padding */
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(22, 33, 62, 0.7); /* Same as workspace-tab */
+            border: 1px solid rgba(147, 51, 234, 0.3); /* Same as workspace-tab */
+            color: #e0e6ff; /* Same as workspace-tab */
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px; /* Same as workspace-tab */
+            text-align: left; /* Align text to left */
+            transition: all 0.3s ease;
+            box-shadow: none; /* Remove cyber-button shadow if inherited */
+            display: flex; /* Make it a flex container to align icon and text */
+            align-items: center;
+            gap: 10px; /* Space between icon and text */
+        }
+
+        .workspace-action-btn:hover {
+            background: rgba(83, 52, 131, 0.6); /* Same as workspace-tab hover */
+            border-color: #9333ea; /* Same as workspace-tab hover */
+            transform: translateY(-2px); /* Consistent hover effect */
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.4); /* Add subtle shadow on hover */
+        }
+
+        .workspace-action-btn span {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Space between icon and text */
+        }
+
+        .new-workspace-btn {
+        margin-top: 15px;
+        width: 100%;
+        }

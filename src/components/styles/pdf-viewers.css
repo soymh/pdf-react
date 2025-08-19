@@ -1,0 +1,131 @@
+.pdf-viewers {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            overflow-x: auto;
+            background: rgba(10, 10, 10, 0.5);
+            padding-right: 320px;
+            scroll-behavior: smooth;
+            align-items: flex-start; /* Align items to the start to prevent vertical stretching */
+        }
+
+        /* Responsive PDF viewer sizing */
+        .pdf-viewer {
+            flex-shrink: 0; /* Prevent shrinking */
+            flex-grow: 1; /* Allow growing */
+            width: calc(100% / var(--pdf-count, 1) - (var(--pdf-count, 1) - 1) * 15px / var(--pdf-count, 1)); /* Distribute width equally */
+            background: rgba(22, 33, 62, 0.9);
+            border: 2px solid rgba(147, 51, 234, 0.6);
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 12px 40px rgba(147, 51, 234, 0.3);
+            animation: fadeInUp 0.5s ease-out forwards;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            max-width: 800px; /* Add a max-width to prevent excessive growth */
+            min-width: 600px; /* Ensure a minimum readable width */
+        }
+
+        .pdf-viewer:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
+            border-color: rgba(147, 51, 234, 0.8);
+        }
+
+        /* Enhanced PDF header */
+        .pdf-header {
+            background: linear-gradient(135deg, rgba(83, 52, 131, 0.95), rgba(147, 51, 234, 0.8));
+            padding: 15px;
+            border-bottom: 2px solid #9333ea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .pdf-title {
+            font-size: 16px;
+            color: #e0e6ff;
+            text-shadow: 0 0 15px #9333ea;
+            font-weight: bold;
+            max-width: 60%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Enhanced PDF canvas container */
+        .pdf-canvas-container {
+            position: relative;
+            padding: 20px;
+            height: 600px; /* Increased height */
+            overflow: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0 0 12px 12px;
+            /* Custom scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(147, 51, 234, 0.6) rgba(0, 0, 0, 0.3);
+        }
+
+        .pdf-canvas-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .pdf-canvas-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .pdf-canvas-container::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.6);
+            border-radius: 4px;
+        }
+
+        .pdf-canvas-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(147, 51, 234, 0.8);
+        }
+
+        /* Enhanced PDF canvas */
+        .pdf-canvas {
+            border: 2px solid rgba(147, 51, 234, 0.4);
+            border-radius: 8px;
+            cursor: crosshair;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .pdf-canvas:hover {
+            border-color: rgba(147, 51, 234, 0.8);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Enhanced navigation buttons */
+        .pdf-nav-btn {
+            background: linear-gradient(45deg, rgba(147, 51, 234, 0.4), rgba(83, 52, 131, 0.6));
+            border: 1px solid #9333ea;
+            color: #e0e6ff;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 35px;
+            border-radius: 12px;
+        }
+
+        .pdf-nav-btn:hover {
+            background: linear-gradient(45deg, rgba(147, 51, 234, 0.7), rgba(83, 52, 131, 0.8));
+            box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+            transform: scale(1.05);
+        }
+
+        .pdf-nav-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
