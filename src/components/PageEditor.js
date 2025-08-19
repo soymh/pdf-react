@@ -39,7 +39,6 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 });
   const [rotationInput, setRotationInput] = useState(0); // This line was missing!
   const [zoomLevel, setZoomLevel] = useState(1); // NEW: State for zoom level
-  const [setZoomOrigin] = useState({ x: 0, y: 0 }); // NEW: State for zoom origin
   const [pan, setPan] = useState({ x: 0, y: 0 }); // NEW: State for pan offset
 
   // Handle capture selection
@@ -132,7 +131,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
 
     if (!imgWrapper || !imgElement) return;
 
-    const imgWrapperRect = imgWrapper.getBoundingClientRect();
+    // const imgWrapperRect = imgWrapper.getBoundingClientRect();
     const imgElementRect = imgElement.getBoundingClientRect();
 
     // The 'transform: scale' is applied to imgWrapper, so imgElementRect gives us the visually scaled size
@@ -233,7 +232,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                   const { handle } = dragStart;
 
                   // NEW: Use combined scale for accurate resize calculation
-                  const combinedScale = (canvasDimensions?.scale || 1) * zoomLevel;
+                  const combinedScale = (canvasDimensions?.scale || 1) * 2 * zoomLevel; // It WORKS! SO IS GOOD XD
                   const scaledDeltaX = deltaX / combinedScale; // Use combinedScale here
                   const scaledDeltaY = deltaY / combinedScale; // Use combinedScale here
 
@@ -489,8 +488,8 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     if (!capture) return;
 
     // Calculate the new position to center the capture within the A4 page (A4-space coordinates)
-    const newX = 0; // Manually set to 0 for debugging
-    const newY = 0; // Manually set to 0 for debugging
+    // const newX = 0; // Manually set to 0 for debugging
+    // const newY = 0; // Manually set to 0 for debugging
 
     setPages(prev => prev.map((page, index) => {
       if (index === currentPageIndex) {
@@ -734,7 +733,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
 
         <div className="page-editor-toolbar">
           <button className="toolbar-btn" title="Zoom Out" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>🔍-</button>
-          <button className="toolbar-btn" title="Reset Zoom" onClick={() => { setZoomLevel(1); setZoomOrigin({ x: 0, y: 0 }); }}>100%</button> {/* NEW: Reset zoomOrigin here */}
+          <button className="toolbar-btn" title="Reset Zoom" onClick={() => { setZoomLevel(1);setPan({ x: 0, y: 0 });}}>100%</button> {/* NEW: Reset zoomOrigin here */}
           <button className="toolbar-btn" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(3.0, prev + 0.1))}>🔍+</button>
 
           <button className="toolbar-btn" title="Center Selection" onClick={handleCenterSelection} disabled={!selectedCapture}>⌖</button>
