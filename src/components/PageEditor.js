@@ -121,7 +121,35 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     e.stopPropagation();
     if (e.target.classList.contains('resize-handle')) return;
     if (e.target.classList.contains('rotate-handle')) return;
-    
+
+    const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
+    if (!capture) return;
+
+    // Calculate actual rendered dimensions and position relative to the canvas
+    const container = e.currentTarget; // This is the .capture-container
+    const imgWrapper = container.querySelector('.capture-wrapper');
+    const imgElement = container.querySelector('.capture-image');
+
+    if (!imgWrapper || !imgElement) return;
+
+    const imgWrapperRect = imgWrapper.getBoundingClientRect();
+    const imgElementRect = imgElement.getBoundingClientRect();
+
+    // The 'transform: scale' is applied to imgWrapper, so imgElementRect gives us the visually scaled size
+    const visualWidth = imgElementRect.width;
+    const visualHeight = imgElementRect.height;
+
+    // Get mouse position relative to the capture-wrapper's visual (scaled) top-left corner
+    const mouseXInCapture = e.clientX - imgElementRect.left;
+    const mouseYInCapture = e.clientY - imgElementRect.top;
+
+    // Check if mouse click is within the *visually rendered* image area
+    if (mouseXInCapture < 0 || mouseXInCapture > visualWidth ||
+        mouseYInCapture < 0 || mouseYInCapture > visualHeight) {
+      // If clicked outside the visual image, do not start drag
+      return;
+    }
+
     setIsDragging(true);
     setSelectedCapture(captureId);
     setDragStart({
@@ -129,11 +157,11 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
       y: e.clientY
     });
     
-    const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
     setInitialTransform({
       position: { ...capture.position },
     });
   };
+
 
   // Start resizing a capture
   const handleResizeStart = (e, captureId, handle) => {
@@ -658,7 +686,12 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                   key={capture.id}
                   className={`capture-container ${selectedCapture === capture.id ? 'selected' : ''}`}
                   style={{
-                  transform: `translate(${(capture.position.x) * (canvasDimensions?.scale || 1)}px, ${(capture.position.y) * (canvasDimensions?.scale || 1)}px)`,
+                  // Position relative to the A4 canvas.
+                  // These are A4-space coordinates, so they are multiplied by canvasDimensions.scale
+                  // for display on the screen, and then further by zoomLevel.
+                  // The captures themselves will have their width/height set directly,
+                  // so the position needs to be for the *top-left corner* of the scaled image.
+                  transform: `translate(${(capture.position.x) * (canvasDimensions?.scale || 1)}px, ${(capture.position.y) * (canvasDimensions?.scale || 1)}px)`
                   }}
                   onMouseDown={(e) => handleMouseDown(e, capture.id)}
                   onClick={(e) => handleCaptureClick(e, capture.id)}
@@ -666,7 +699,11 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                   <div
                     className="capture-wrapper"
                     style={{
-                      transform: `scale(${capture.scale.x}, ${capture.scale.y}) rotate(${capture.rotation}deg)`,
+                      // Set explicit width and height based on original size and current scale
+                      width: `${capture.originalSize.width * capture.scale.x}px`,
+                      height: `${capture.originalSize.height * capture.scale.y}px`,
+                      transform: `rotate(${capture.rotation}deg)`, // Keep rotation here
+                      transformOrigin: 'center center' // Ensure rotation is around the center
                     }}
                   >
                     <img
@@ -674,6 +711,11 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                       alt="Captured content"
                       className="capture-image"
                       draggable={false}
+                      style={{
+                        width: '100%', // Make image fill its parent wrapper
+                        height: '100%',
+                        // Removed objectFit: 'contain' to allow free aspect ratio changes
+                      }}
                     />
                     
                     {selectedCapture === capture.id && (
