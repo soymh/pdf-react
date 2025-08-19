@@ -257,7 +257,7 @@ function App() {
 
       // Pass a callback function to upscaleImage to receive progress updates
       const upscaledImageResult = await new Promise((resolve, reject) => {
-        upscaleImage(imageData, 'realx4plus', upscalingBackend, (progressEvent) => {
+        upscaleImage(imageData, 'realx4v3-fast', upscalingBackend, (progressEvent) => {
           if (progressEvent.detail.progress !== undefined) {
             setUpscaleProgress(progressEvent.detail.progress); // Update progress based on actual worker progress
           }

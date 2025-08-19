@@ -2,7 +2,7 @@
 
 let upscaleWorker = new Worker(new URL('./upscaleWorker.js', import.meta.url), { type: 'module' });
 
-async function upscaleImage(imageData, modelName = 'realx4plus', backend = 'webgpu', onProgress = () => {}) { // Add onProgress callback
+async function upscaleImage(imageData, modelName = 'realx4v3-fast', backend = 'webgpu', onProgress = () => {}) { // Add onProgress callback
   console.log("Image Upscale Module: Received imageData for upscaling with dimensions:", imageData.width, "x", imageData.height);
   console.log("Image Upscale Module: Sending image data to upscale worker...");
 

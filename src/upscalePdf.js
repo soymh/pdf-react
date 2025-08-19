@@ -4,7 +4,7 @@ import * as pdfjs from 'pdfjs-dist/build/pdf';
 // Initialize the worker as a module worker
 let upscaleWorker = new Worker(new URL('./upscaleWorker.js', import.meta.url), { type: 'module' });
 
-async function upscalePdf(pdfData, modelName = 'realx4plus', backend = 'webgl') {
+async function upscalePdf(pdfData, modelName = 'realx4v3-fast', backend = 'webgl') {
   console.log("PDF Upscale Module: Starting PDF upscaling process...");
   console.log("PDF Upscale Module: Loading PDF document with pdf-lib...");
   const pdfDoc = await PDFDocument.load(pdfData);
