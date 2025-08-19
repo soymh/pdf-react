@@ -3,6 +3,7 @@ import { ReactSortable } from 'react-sortablejs';
 import { createPortal } from 'react-dom';
 import PageEditor from './PageEditor';
 import './styles/spaces-panel.css';
+import './styles/selection.css';
 
 function SpaceItem({
   space,
