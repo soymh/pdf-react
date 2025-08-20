@@ -84,6 +84,16 @@ body.dragging .header {
   @apply flex items-center gap-2;
 }
 
+.pdf-nav-btn {
+  @apply w-8 h-8 flex items-center justify-center text-lg font-bold cursor-pointer;
+  @apply bg-cyber-blue/60 border border-cyber-purple/40 rounded-lg;
+  @apply hover:bg-cyber-purple/30 transition-colors duration-200;
+}
+
+.pdf-nav-btn:disabled {
+  @apply opacity-30 cursor-not-allowed hover:bg-cyber-blue/60;
+}
+
 .menu-toggle {
   @apply w-8 h-8 flex items-center justify-center text-lg font-bold cursor-pointer;
   @apply bg-cyber-blue/60 border border-cyber-purple/40 rounded-lg;
@@ -101,4 +111,24 @@ body.dragging .header {
 
 .pdf-controls-menu .absolute {
   @apply min-w-[180px];
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  @apply absolute bottom-4 left-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300;
+  z-index: 10;
+}
+
+.pdf-canvas-container:hover .zoom-controls {
+  @apply opacity-100;
+}
+
+.zoom-btn {
+  @apply w-8 h-8 flex items-center justify-center text-lg font-bold cursor-pointer;
+  @apply bg-cyber-blue/80 border border-cyber-purple/40 rounded-lg;
+  @apply hover:bg-cyber-purple/40 transition-colors duration-200;
+}
+
+.zoom-btn.zoom-reset {
+  @apply text-sm;
 }

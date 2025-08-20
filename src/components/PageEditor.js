@@ -123,31 +123,6 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
     const capture = pages[currentPageIndex].captures.find(c => c.id === captureId);
     if (!capture) return;
 
-    // Calculate actual rendered dimensions and position relative to the canvas
-    const container = e.currentTarget; // This is the .capture-container
-    const imgWrapper = container.querySelector('.capture-wrapper');
-    const imgElement = container.querySelector('.capture-image');
-
-    if (!imgWrapper || !imgElement) return;
-
-    // const imgWrapperRect = imgWrapper.getBoundingClientRect();
-    const imgElementRect = imgElement.getBoundingClientRect();
-
-    // The 'transform: scale' is applied to imgWrapper, so imgElementRect gives us the visually scaled size
-    const visualWidth = imgElementRect.width;
-    const visualHeight = imgElementRect.height;
-
-    // Get mouse position relative to the capture-wrapper's visual (scaled) top-left corner
-    const mouseXInCapture = e.clientX - imgElementRect.left;
-    const mouseYInCapture = e.clientY - imgElementRect.top;
-
-    // Check if mouse click is within the *visually rendered* image area
-    if (mouseXInCapture < 0 || mouseXInCapture > visualWidth ||
-        mouseYInCapture < 0 || mouseYInCapture > visualHeight) {
-      // If clicked outside the visual image, do not start drag
-      return;
-    }
-
     setIsDragging(true);
     setSelectedCapture(captureId);
     setDragStart({
