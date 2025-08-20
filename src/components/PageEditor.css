@@ -1,234 +1,107 @@
 .full-screen-editor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 9999;
-  background: rgba(13, 14, 22, 0.98);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  backdrop-filter: blur(10px);
-  animation: editorFadeIn 0.3s ease;
+  @apply fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999] bg-[#0d0e16]/98 flex justify-center items-center backdrop-blur-lg animate-editorFadeIn;
 }
 
 .page-editor {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, rgba(16, 17, 27, 0.95) 0%, rgba(22, 24, 36, 0.95) 100%);
-  box-shadow: 0 0 50px rgba(147, 51, 234, 0.2);
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  @apply w-full h-full flex flex-col bg-gradient-to-br from-[#10111b]/95 to-[#161824]/95 shadow-[0_0_50px_rgba(147,51,234,0.2)] border border-cyber-purple/20;
 }
 
 @keyframes editorFadeIn {
   from {
-    opacity: 0;
-    transform: scale(0.98);
+    @apply opacity-0 scale-98;
   }
   to {
-    opacity: 1;
-    transform: scale(1);
+    @apply opacity-100 scale-100;
   }
 }
 
 /* Editor Overlay Styles */
 .editor-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 999999 !important; /* Ensure it's above everything */
-  display: flex;
-  flex-direction: column;
-  animation: overlayFadeIn 0.3s ease;
-  isolation: isolate; /* Create a new stacking context */
+  @apply fixed top-0 left-0 w-screen h-screen z-[999999] flex flex-col animate-overlayFadeIn isolate;
 }
 
 /* Override any container styles */
 #root .editor-overlay {
-  position: fixed;
-  left: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
+  @apply fixed left-0 !important mx-0 !important px-0 !important w-screen !important max-w-screen !important;
 }
 
 .editor-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(13, 14, 22, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: -1;
-  margin: 0 !important;
-  padding: 0 !important;
-  transform: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  @apply fixed top-0 left-0 w-screen h-screen bg-[#0d0e16]/95 backdrop-blur-lg z-[-1] mx-0 !important px-0 !important transform-none !important rounded-none !important shadow-none !important;
 }
 
 .editor-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  animation: containerSlideUp 0.4s ease;
+  @apply flex-1 flex flex-col p-5 animate-containerSlideUp;
 }
 
 .editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 30px;
-  background: linear-gradient(90deg, 
-    rgba(22, 24, 36, 0.95) 0%, 
-    rgba(32, 34, 48, 0.95) 100%
-  );
-  border-bottom: 2px solid rgba(147, 51, 234, 0.3);
-  border-radius: 12px 12px 0 0;
-  margin-bottom: 20px;
+  @apply flex justify-between items-center p-5 bg-gradient-to-r from-[#161824]/95 to-[#202230]/95 border-b-2 border-cyber-purple/30 rounded-tl-xl rounded-tr-xl mb-5;
 }
 
 .editor-header h2 {
-  color: #fff;
-  font-size: 24px;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  @apply text-white text-2xl m-0 uppercase tracking-[1px];
   text-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
 }
 
 .editor-actions {
-  display: flex;
-  gap: 15px;
+  @apply flex gap-[15px];
 }
 
 .editor-btn {
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  @apply p-3 text-base font-semibold border-none rounded-lg cursor-pointer uppercase tracking-[1px] transition-all duration-300 relative overflow-hidden;
 }
 
 .editor-btn::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  @apply content-[''] absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,transparent_70%)] opacity-0 transition-opacity duration-300;
 }
 
 .editor-btn:hover::after {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .editor-btn.cancel {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  @apply bg-white/10 text-white border border-white/20;
 }
 
 .editor-btn.cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  @apply bg-white/20 -translate-y-0.5 shadow-[0_4px_15px_rgba(0,0,0,0.2)];
 }
 
 .editor-btn.save {
-  background: linear-gradient(45deg, 
-    rgba(147, 51, 234, 0.9),
-    rgba(167, 71, 254, 0.9)
-  );
-  color: #fff;
-  border: 1px solid rgba(147, 51, 234, 0.5);
+  @apply bg-gradient-to-br from-[#9333ea]/90 to-[#a747fe]/90 text-white border border-cyber-purple/50;
 }
 
 .editor-btn.save:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 4px 20px rgba(147, 51, 234, 0.4),
-    0 0 0 1px rgba(147, 51, 234, 0.5);
+  @apply -translate-y-0.5 shadow-[0_4px_20px_rgba(147,51,234,0.4),0_0_0_1px_rgba(147,51,234,0.5)];
 }
 
 @keyframes overlayFadeIn {
   from {
-    opacity: 0;
+    @apply opacity-0;
   }
   to {
-    opacity: 1;
+    @apply opacity-100;
   }
 }
 
 @keyframes containerSlideUp {
   from {
-    opacity: 0;
-    transform: translateY(20px);
+    @apply opacity-0 translate-y-5;
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    @apply opacity-100 translate-y-0;
   }
 }
 
 .page-editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  background: linear-gradient(90deg, rgba(22, 24, 36, 0.98) 0%, rgba(32, 34, 48, 0.98) 100%);
-  border-bottom: 2px solid rgba(147, 51, 234, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1001;
-  height: 50px;
+  @apply flex justify-between items-center p-[10px_20px] bg-gradient-to-r from-[#161824]/98 to-[#202230]/98 border-b-2 border-cyber-purple/30 shadow-[0_4px_20px_rgba(0,0,0,0.2)] fixed top-0 left-0 right-0 z-[1001] h-[50px];
 }
 
 .page-editor-title {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: bold;
+  @apply flex items-center gap-[15px] text-white text-sm font-bold;
 }
 
 .page-navigation {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 15px;
-  padding: 4px 12px;
-  background: linear-gradient(90deg, rgba(147, 51, 234, 0.1), rgba(147, 51, 234, 0.05));
-  border: 1px solid rgba(147, 51, 234, 0.2);
-  border-radius: 15px;
-  box-shadow: 
-    0 0 0 1px rgba(147, 51, 234, 0.1),
-    0 4px 10px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  font-size: 12px;
+  @apply flex items-center gap-[10px] ml-[15px] p-[4px_12px] bg-gradient-to-r from-cyber-purple/10 to-cyber-purple/5 border border-cyber-purple/20 rounded-[15px] shadow-[0_0_0_1px_rgba(147,51,234,0.1),0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-lg text-xs;
 }
 
 @keyframes glow {
@@ -245,127 +118,58 @@
 }
 
 .nav-btn {
-  background: rgba(147, 51, 234, 0.2);
-  border: none;
-  color: #fff;
-  width: 30px;
-  height: 30px;
-  border-radius: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  @apply bg-cyber-purple/20 border-none text-white w-[30px] h-[30px] rounded-[15px] cursor-pointer flex items-center justify-center transition-all duration-200;
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: rgba(147, 51, 234, 0.4);
+  @apply bg-cyber-purple/40;
 }
 
 .nav-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+  @apply opacity-30 cursor-not-allowed;
 }
 
 .page-editor-actions {
-  display: flex;
-  gap: 10px;
+  @apply flex gap-[10px];
 }
 
 .page-editor-btn {
-  background: rgba(147, 51, 234, 0.1);
-  border: 1px solid rgba(147, 51, 234, 0.3);
-  color: #fff;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  @apply bg-cyber-purple/10 border border-cyber-purple/30 text-white p-2 rounded border-cursor-pointer text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-[cubic-bezier(0.4,0,0.2,1)] relative overflow-hidden;
 }
 
 .page-editor-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(147, 51, 234, 0.2), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.5s ease;
+  @apply content-[''] absolute top-0 left-0 w-full h-full bg-[linear-gradient(90deg,transparent,rgba(147,51,234,0.2),transparent)] -translate-x-full transition-transform duration-500;
 }
 
 .page-editor-btn:hover {
-  background: rgba(147, 51, 234, 0.2);
-  border-color: rgba(147, 51, 234, 0.5);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(147, 51, 234, 0.2);
+  @apply bg-cyber-purple/20 border-cyber-purple/50 -translate-y-0.5 shadow-[0_4px_20px_rgba(147,51,234,0.2)];
 }
 
 .page-editor-btn:hover::before {
-  transform: translateX(100%);
+  @apply translate-x-full;
 }
 
 /* Clean minimal save button */
 .page-editor-btn.save-minimal {
-  background: rgba(147, 51, 234, 0.15);
-  border: 1px solid rgba(147, 51, 234, 0.4);
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: none;
-  letter-spacing: 0.5px;
-  transition: all 0.2s ease;
+  @apply bg-cyber-purple/15 border border-cyber-purple/40 text-white p-2 px-5 rounded-lg text-sm font-medium normal-case tracking-[0.5px] transition-all duration-200;
 }
 
 .page-editor-btn.save-minimal:hover {
-  background: rgba(147, 51, 234, 0.25);
-  border-color: rgba(147, 51, 234, 0.6);
-  transform: none;
-  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.2);
+  @apply bg-cyber-purple/25 border-cyber-purple/60 scale-100 shadow-[0_2px_8px_rgba(147,51,234,0.2)];
 }
 
 .page-editor-content {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, rgba(13, 14, 22, 0.95) 0%, rgba(20, 22, 33, 0.95) 100%);
-  padding: 40px 20px; /* Increased padding for better spacing */
-  padding-top: 90px; /* Account for fixed header */
-  min-height: 100vh;
-  perspective: 1000px;
+  @apply relative overflow-hidden flex justify-center items-center bg-gradient-to-br from-[#0d0e16]/95 to-[#141621]/95 p-[40px_20px] pt-[90px] min-h-screen perspective-1000;
 }
 
 /* More zoomed out canvas with cleaner appearance */
 .page-editor-canvas {
-  position: relative;
-  background: #fff;
-  /* A4 aspect ratio */
-  max-height: calc(100vh - 200px); /* More conservative height */
-  width: auto;
-  box-shadow: 
-    0 0 0 1px rgba(147, 51, 234, 0.15),
-    0 0 20px rgba(147, 51, 234, 0.08),
-    0 0 40px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-  transform: translateZ(0);
-  border-radius: 2px;
-  /* Remove floating animation for cleaner look */
-  animation: none;
+  @apply relative bg-white max-h-[calc(100vh-200px)] w-auto shadow-[0_0_0_1px_rgba(147,51,234,0.15),0_0_20px_rgba(147,51,234,0.08),0_0_40px_rgba(0,0,0,0.2)] transition-all duration-300 translateZ-0 rounded-sm animation-none;
 }
 
 @keyframes canvasFloat {
   0%, 100% {
-    transform: translateY(0) translateZ(0);
+    @apply translate-y-0 translateZ-0;
     box-shadow: 
       0 0 0 1px rgba(147, 51, 234, 0.2),
       0 0 0 2px rgba(147, 51, 234, 0.1),
@@ -373,7 +177,7 @@
       0 0 50px rgba(0, 0, 0, 0.3);
   }
   50% {
-    transform: translateY(-10px) translateZ(0);
+    @apply -translate-y-2.5 translateZ-0;
     box-shadow: 
       0 0 0 1px rgba(147, 51, 234, 0.3),
       0 0 0 2px rgba(147, 51, 234, 0.2),
@@ -383,323 +187,159 @@
 }
 
 .capture-container {
-  position: absolute;
-  cursor: move;
-  user-select: none;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.3));
-  transition: filter 0.2s ease;
+  @apply absolute cursor-move select-none filter drop-shadow-[0_0_10px_rgba(0,0,0,0.3)] transition-filter duration-200;
 }
 
 .capture-container:hover {
-  filter: drop-shadow(0 0 15px rgba(147, 51, 234, 0.3));
+  @apply drop-shadow-[0_0_15px_rgba(147,51,234,0.3)];
 }
 
 .capture-wrapper {
-  position: relative;
-  transform-origin: center;
+  @apply relative transform-origin-center;
 }
 
 .capture-image {
-  width: 100%;
-  height: 100%;
-  border: 2px solid transparent;
-  transition: all 0.2s ease;
+  @apply w-full h-full border-2 border-transparent transition-all duration-200;
 }
 
 .capture-container.selected .capture-image {
-  border-color: rgba(147, 51, 234, 0.8);
+  @apply border-cyber-purple/80;
 }
 
 .resize-handle {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  background: rgba(147, 51, 234, 0.9);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  opacity: 1 !important;
-  display: block !important;
-  z-index: 1000;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  @apply absolute w-4 h-4 bg-cyber-purple/90 border-2 border-white rounded-full transition-all duration-200 opacity-100 block z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] !important;
 }
 
 .resize-handle:hover {
-  transform: scale(1.3);
-  background: rgba(147, 51, 234, 1);
-  box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+  @apply scale-125 bg-cyber-purple shadow-[0_0_15px_rgba(147,51,234,0.5)];
 }
 
-.resize-handle.nw { top: -8px; left: -8px; cursor: nw-resize; }
-.resize-handle.ne { top: -8px; right: -8px; cursor: ne-resize; }
-.resize-handle.sw { bottom: -8px; left: -8px; cursor: sw-resize; }
-.resize-handle.se { bottom: -8px; right: -8px; cursor: se-resize; }
+.resize-handle.nw { @apply top-[-8px] left-[-8px] cursor-nw-resize; }
+.resize-handle.ne { @apply top-[-8px] right-[-8px] cursor-ne-resize; }
+.resize-handle.sw { @apply bottom-[-8px] left-[-8px] cursor-sw-resize; }
+.resize-handle.se { @apply bottom-[-8px] right-[-8px] cursor-se-resize; }
 
 .rotate-handle {
-  position: absolute;
-  top: -35px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 24px;
-  height: 24px;
-  background: rgba(147, 51, 234, 0.9);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  cursor: grab;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  opacity: 1 !important;
-  z-index: 1000;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  @apply absolute top-[-35px] left-1/2 -translate-x-1/2 w-6 h-6 bg-cyber-purple/90 border-2 border-white rounded-full cursor-grab flex items-center justify-center text-white text-lg transition-all duration-200 opacity-100 z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] !important;
 }
 
 .rotate-handle:hover {
-  transform: translateX(-50%) scale(1.2);
+  @apply -translate-x-1/2 scale-125;
 }
 
 /* New Layering Handles */
 .layer-handle {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  background: rgba(83, 52, 131, 0.9); /* Darker purple */
-  border: 1px solid #9333ea;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 12px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  opacity: 1 !important;
-  z-index: 1000;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  @apply absolute w-5 h-5 bg-[#533483]/90 border border-cyber-purple rounded cursor-pointer flex items-center justify-center text-white text-xs font-bold transition-all duration-200 opacity-100 z-[1000] shadow-[0_0_5px_rgba(0,0,0,0.2)] !important;
 }
 
 .delete-handle {
-  position: absolute;
-  top: -35px; /* Aligned with other handles */
-  right: -35px; /* Positioned to the right */
-  width: 24px;
-  height: 24px;
-  background: rgba(220, 38, 127, 0.9); /* Red */
-  border: 2px solid #fff;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 14px;
-  font-weight: bold;
-  transition: all 0.2s ease;
-  opacity: 1 !important;
-  z-index: 1000;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  @apply absolute top-[-35px] right-[-35px] w-6 h-6 bg-[#dc267f]/90 border-2 border-white rounded-full cursor-pointer flex items-center justify-center text-white text-lg font-bold transition-all duration-200 opacity-100 z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] !important;
 }
 
 .delete-handle:hover {
-  background: rgba(239, 68, 68, 1); /* Brighter red on hover */
-  transform: scale(1.2);
-  box-shadow: 0 0 15px rgba(220, 38, 127, 0.5);
+  @apply bg-[#ef4444]/100 scale-125 shadow-[0_0_15px_rgba(220,38,127,0.5)];
 }
 
 .layer-handle:hover {
-  background: rgba(147, 51, 234, 0.9); /* Lighter purple on hover */
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+  @apply bg-cyber-purple/90 scale-110 shadow-[0_0_10px_rgba(147,51,234,0.5)];
 }
 
 /* Positioning for layering handles */
 .layer-handle.bring-front {
-  top: -35px; /* Aligned with rotate handle */
-  left: calc(50% + 25px); /* Offset from center */
-  transform: translateX(-50%);
+  @apply top-[-35px] left-[calc(50%+25px)] -translate-x-1/2;
 }
 
 .layer-handle.send-back {
-  top: -35px;
-  left: calc(50% - 25px); /* Offset from center in opposite direction */
-  transform: translateX(-50%);
+  @apply top-[-35px] left-[calc(50%-25px)] -translate-x-1/2;
 }
 
 .layer-handle.bring-forward {
-  top: -60px; /* Above the bring-front/send-back handles */
-  left: calc(50% + 25px); /* Similar offset */
-  transform: translateX(-50%);
+  @apply top-[-60px] left-[calc(50%+25px)] -translate-x-1/2;
 }
 
 .layer-handle.send-backward {
-  top: -60px; /* Above the bring-front/send-back handles */
-  left: calc(50% - 25px); /* Similar offset */
-  transform: translateX(-50%);
+  @apply top-[-60px] left-[calc(50%-25px)] -translate-x-1/2;
 }
 
 /* Cleaner toolbar */
 .page-editor-toolbar {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 12px;
-  background: rgba(22, 24, 36, 0.90);
-  padding: 12px 20px;
-  border-radius: 12px;
-  z-index: 1000;
-  border: 1px solid rgba(147, 51, 234, 0.2);
-  box-shadow: 
-    0 4px 12px rgba(0, 0, 0, 0.25),
-    0 0 20px rgba(147, 51, 234, 0.1);
-  backdrop-filter: blur(10px);
-  /* Remove floating animation */
-  animation: none;
+  @apply fixed bottom-[30px] left-1/2 -translate-x-1/2 flex gap-3 bg-[#161824]/90 p-3 rounded-xl z-[1000] border border-cyber-purple/20 shadow-[0_4px_12px_rgba(0,0,0,0.25),0_0_20px_rgba(147,51,234,0.1)] backdrop-blur-lg animation-none;
 }
 
 .page-editor-toolbar .toolbar-btn {
-  /* Removed fixed positioning from here */
-  /* Existing toolbar-btn styles will apply, add specific overrides if needed */
-  background: rgba(147, 51, 234, 0.08);
-  border: 1px solid rgba(147, 51, 234, 0.15);
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  @apply bg-cyber-purple/8 border border-cyber-purple/15 text-white w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center text-lg transition-all duration-200 relative overflow-hidden;
 }
 
 .page-editor-toolbar .toolbar-btn::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  @apply content-[''] absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(147,51,234,0.1)_0%,transparent_70%)] opacity-0 transition-opacity duration-300;
 }
 
 .page-editor-toolbar .toolbar-btn:hover {
-  background: rgba(147, 51, 234, 0.15);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
+  @apply bg-cyber-purple/15 -translate-y-0.5 shadow-[0_2px_8px_rgba(147,51,234,0.15)];
 }
 
 .page-editor-toolbar .toolbar-btn:hover::after {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .page-editor-toolbar .toolbar-btn:active {
-  transform: translateY(1px);
+  @apply translate-y-0.5;
 }
 
 .page-editor-toolbar .toolbar-btn:hover {
-  background: rgba(147, 51, 234, 0.4);
-  transform: scale(1.1);
+  @apply bg-cyber-purple/40 scale-110;
 }
 
 .page-editor-toolbar .toolbar-btn.active {
-  background: rgba(147, 51, 234, 0.8);
+  @apply bg-cyber-purple/80;
 }
 
 /* New style for the rotation input field */
 .toolbar-input {
-  background: rgba(147, 51, 234, 0.08);
-  border: 1px solid rgba(147, 51, 234, 0.15);
-  color: #fff;
-  width: 60px; /* Adjust width as needed */
-  height: 40px;
-  border-radius: 8px;
-  padding: 0 8px;
-  font-size: 16px;
-  text-align: center;
-  transition: all 0.2s ease;
+  @apply bg-cyber-purple/8 border border-cyber-purple/15 text-white w-[60px] h-10 rounded-lg p-0 px-2 text-base text-center transition-all duration-200;
 }
 
 .toolbar-input:focus {
-  outline: none;
-  border-color: rgba(147, 51, 234, 0.5);
-  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+  @apply outline-none border-cyber-purple/50 shadow-[0_0_0_2px_rgba(147,51,234,0.2)];
 }
 
 .toolbar-input:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  background: rgba(147, 51, 234, 0.04);
-  border-color: rgba(147, 51, 234, 0.08);
+  @apply opacity-30 cursor-not-allowed bg-cyber-purple/4 border-cyber-purple/8;
 }
 
 @keyframes toolbarFloat {
   0%, 100% {
-    transform: translateX(-50%) translateY(0);
+    @apply translate-x-1/2 translate-y-0;
   }
   50% {
-    transform: translateX(-50%) translateY(-5px);
+    @apply translate-x-1/2 -translate-y-1.5;
   }
 }
 
 .toolbar-btn {
-  background: rgba(147, 51, 234, 0.08);
-  border: 1px solid rgba(147, 51, 234, 0.15);
-  color: #fff;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
+  @apply bg-cyber-purple/8 border border-cyber-purple/15 text-white w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center text-lg transition-all duration-200 relative overflow-hidden;
 }
 
 .toolbar-btn::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(147, 51, 234, 0.1) 0%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  @apply content-[''] absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle,rgba(147,51,234,0.1)_0%,transparent_70%)] opacity-0 transition-opacity duration-300;
 }
 
 .toolbar-btn:hover {
-  background: rgba(147, 51, 234, 0.15);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
+  @apply bg-cyber-purple/15 -translate-y-0.5 shadow-[0_2px_8px_rgba(147,51,234,0.15)];
 }
 
 .toolbar-btn:hover::after {
-  opacity: 1;
+  @apply opacity-100;
 }
 
 .toolbar-btn:active {
-  transform: translateY(1px);
+  @apply translate-y-0.5;
 }
 
 .toolbar-btn:hover {
-  background: rgba(147, 51, 234, 0.4);
-  transform: scale(1.1);
+  @apply bg-cyber-purple/40 scale-110;
 }
 
 .toolbar-btn.active {
-  background: rgba(147, 51, 234, 0.8);
+  @apply bg-cyber-purple/80;
 }

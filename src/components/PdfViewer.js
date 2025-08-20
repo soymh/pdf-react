@@ -8,6 +8,7 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
   const renderTaskRef = useRef(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   // Remove local scale state: const [scale, setScale] = useState(1);
 
   // Ref to hold the current page's rendered ImageData for upscaling
@@ -275,66 +276,108 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
     onUpscale(pdfData.id, pdfData.currentPage, currentPageImageDataRef.current);
   };
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && !event.target.closest('.pdf-controls-menu')) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
   return (
     <div className={`pdf-viewer glow ${isUpscaling ? 'upscaling-active' : ''}`} style={{ animationDelay: `${index * 100}ms` }}>
       <div className="pdf-header">
         <div className="pdf-title" title={pdfData.name}>{pdfData.name}</div>
         <div className="pdf-controls">
-          <button className="pdf-nav-btn" onClick={handleZoomOut} title="Zoom Out">
-            -
-          </button>
-          <button className="pdf-nav-btn" onClick={handleResetZoom} title="Reset Zoom">
-            ⚬
-          </button>
-          <button className="pdf-nav-btn" onClick={handleZoomIn} title="Zoom In">
-            +
-          </button>
-          <button
-            className="pdf-nav-btn"
-            onClick={handleUpscaleClick}
-            disabled={isUpscaling}
-            title="Upscale Current Page"
-            style={{ background: isUpscaling ? 'linear-gradient(45deg, rgba(255, 165, 0, 0.6), rgba(255, 99, 71, 0.8))' : 'linear-gradient(45deg, rgba(120, 38, 220, 0.4), rgba(90, 24, 190, 0.6))' }}
-          >
-            {isUpscaling ? '⏳' : '✨'}
-          </button>
-          <button
-            className="pdf-nav-btn"
-            onClick={handleDownload}
-            title="Download PDF"
-            style={{ background: 'linear-gradient(45deg, rgba(38, 220, 127, 0.4), rgba(24, 190, 93, 0.6))' }}
-          >
-
-            📥
-          </button>
-          <button
-            className="pdf-nav-btn"
-            onClick={() => changePage(-1)}
-            disabled={pdfData.currentPage <= 1 || isUpscaling}
-            title="Previous Page"
-          >
-            ◀
-          </button>
-          <span style={{ padding: '0 10px', fontSize: '14px', fontWeight: 'bold' }}>
+          <div className="relative pdf-controls-menu">
+            <button 
+              className="pdf-nav-btn menu-toggle" 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              title="PDF Options"
+            >
+              ⋮
+            </button>
+            
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-1 w-48 bg-cyber-blue/90 border border-cyber-purple/40 rounded-lg shadow-lg z-10">
+                <div className="py-1">
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { handleZoomOut(); setIsMenuOpen(false); }}
+                    title="Zoom Out"
+                  >
+                    Zoom Out (-)
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { handleResetZoom(); setIsMenuOpen(false); }}
+                    title="Reset Zoom"
+                  >
+                    Reset Zoom (⚬)
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { handleZoomIn(); setIsMenuOpen(false); }}
+                    title="Zoom In"
+                  >
+                    Zoom In (+)
+                  </button>
+                  <hr className="border-cyber-purple/30 my-1" />
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { handleUpscaleClick(); setIsMenuOpen(false); }}
+                    disabled={isUpscaling}
+                    title="Upscale Current Page"
+                  >
+                    {isUpscaling ? '⏳ Upscaling...' : '✨ Upscale Page'}
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { handleDownload(); setIsMenuOpen(false); }}
+                    title="Download PDF"
+                  >
+                    📥 Download PDF
+                  </button>
+                  <hr className="border-cyber-purple/30 my-1" />
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { changePage(-1); setIsMenuOpen(false); }}
+                    disabled={pdfData.currentPage <= 1 || isUpscaling}
+                    title="Previous Page"
+                  >
+                    ◀ Previous Page
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30"
+                    onClick={() => { changePage(1); setIsMenuOpen(false); }}
+                    disabled={pdfData.currentPage >= pdfData.totalPages || isUpscaling}
+                    title="Next Page"
+                  >
+                    ▶ Next Page
+                  </button>
+                  <hr className="border-cyber-purple/30 my-1" />
+                  <button
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-cyber-purple/30 text-red-300"
+                    onClick={() => { onRemove(pdfData.id); setIsMenuOpen(false); }}
+                    title="Remove PDF"
+                    disabled={isUpscaling}
+                  >
+                    ✕ Remove PDF
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <span className="page-counter">
             {pdfData.currentPage} / {pdfData.totalPages}
           </span>
-          <button
-            className="pdf-nav-btn"
-            onClick={() => changePage(1)}
-            disabled={pdfData.currentPage >= pdfData.totalPages || isUpscaling}
-            title="Next Page"
-          >
-            ▶
-          </button>
-          <button
-            className="pdf-nav-btn"
-            onClick={() => onRemove(pdfData.id)}
-            style={{ background: 'linear-gradient(45deg, rgba(220, 38, 127, 0.4), rgba(190, 24, 93, 0.6))' }}
-            title="Remove PDF"
-            disabled={isUpscaling}
-          >
-            ✕
-          </button>
         </div>
       </div>
       <div className="pdf-canvas-container" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>

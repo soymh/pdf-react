@@ -1,196 +1,146 @@
 @import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+* {
+  @apply box-border m-0 p-0;
+}
 
-        :root {
-        --cyber-delete-icon-color: #ff6666; /* Red for delete */
-        --cyber-delete-icon-hover-color: #ff0000; /* Brighter red on hover */
-        --cyber-text-color-light: #00e6e6; /* Bright cyan for text */
-        /* Ensure these are consistent with your existing theme, or adjust as needed */
-        --cyber-panel-bg: rgba(13, 22, 33, 0.8);
-        --cyber-hover-bg: rgba(26, 44, 66, 0.8);
-        --cyber-active-bg: rgba(30, 60, 90, 0.9);
-        --cyber-active-border: #9333ea; /* Purple */
-        --cyber-glow-color: #9333ea; /* Purple glow */
-        --cyber-border-color: #007bff; /* Blue border */
-        --cyber-accent-color: #f7df1e; /* Yellow accent */
-        --cyber-input-bg: #0d1621;
-        }
+:root {
+  --cyber-delete-icon-color: #ff6666; /* Red for delete */
+  --cyber-delete-icon-hover-color: #ff0000; /* Brighter red on hover */
+  --cyber-text-color-light: #00e6e6; /* Bright cyan for text */
+  /* Ensure these are consistent with your existing theme, or adjust as needed */
+  --cyber-panel-bg: rgba(13, 22, 33, 0.8);
+  --cyber-hover-bg: rgba(26, 44, 66, 0.8);
+  --cyber-active-bg: rgba(30, 60, 90, 0.9);
+  --cyber-active-border: #9333ea; /* Purple */
+  --cyber-glow-color: #9333ea; /* Purple glow */
+  --cyber-border-color: #007bff; /* Blue border */
+  --cyber-accent-color: #f7df1e; /* Yellow accent */
+  --cyber-input-bg: #0d1621;
+}
 
-        body {
-            font-family: 'Rajdhani', sans-serif; /* Changed from 'Inter' */
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
-            color: #e0e6ff;
-            overflow: hidden;
-            height: 100vh;
-        }
+body {
+  @apply font-rajdhani bg-gradient-to-br from-cyber-dark via-cyber-darker via-25% via-cyber-darkest via-50% to-cyber-blue to-75% to-cyber-purple text-cyber-light overflow-hidden h-screen;
+}
 
-        /* Apply Oxanium to headers and prominent display text */
-        .workspaces-header,
-        .spaces-header,
-        .modal h3,
-        .logo, /* This targets the header logo text */
-        .pdf-title,
-        .empty-state h3 {
-            font-family: 'Oxanium', sans-serif;
-            font-weight: 700; /* Use a bold weight for impact */
-        }
+/* Apply Oxanium to headers and prominent display text */
+.workspaces-header,
+.spaces-header,
+.modal h3,
+.logo, /* This targets the header logo text */
+.pdf-title,
+.empty-state h3 {
+  @apply font-oxanium font-bold;
+}
 
-        /* Apply Fira Code to inputs for a clean, code-like aesthetic */
-        .workspace-rename-input,
-        .modal input {
-            font-family: 'Fira Code', monospace; /* Changed from 'Inter' */
-        }
+/* Apply Fira Code to inputs for a clean, code-like aesthetic */
+.workspace-rename-input,
+.modal input {
+  @apply font-fira;
+}
 
-        /* Ensure cyber-buttons and other UI text also use Rajdhani */
-        .cyber-button,
-        .pdf-nav-btn,
-        .zen-mode-toggle-button, /* The new circular button */
-        .notification,
-        .empty-state p {
-            font-family: 'Rajdhani', sans-serif;
-        }
+/* Ensure cyber-buttons and other UI text also use Rajdhani */
+.cyber-button,
+.pdf-nav-btn,
+.zen-mode-toggle-button, /* The new circular button */
+.notification,
+.empty-state p {
+  @apply font-rajdhani;
+}
 
-        /* The .workspace-name-display should also inherit Rajdhani from body,
-        but you can explicitly set it if needed for consistency. */
-        .workspace-name-display {
-            font-family: 'Rajdhani', sans-serif;
-        }
+/* The .workspace-name-display should also inherit Rajdhani from body,
+but you can explicitly set it if needed for consistency. */
+.workspace-name-display {
+  @apply font-rajdhani;
+}
 
+/* Container adjustments when panels are expanded */
+.container {
+  @apply relative z-10 h-screen flex flex-col pl-[30px] pr-[30px] pt-[25px] transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)];
+}
 
-        body:has(.workspaces-panel:hover) .container {
-            padding-left: 250px;
-        }
+body:has(.workspaces-panel:hover) .container,
+body:has(.workspaces-panel.expanded) .container {
+  @apply pl-[250px];
+}
 
-        /* body:has(.spaces-panel:hover) .container {
-            padding-right: 50px;
-        } */
+body:has(.spaces-panel:hover) .container,
+body:has(.spaces-panel.expanded) .container {
+  @apply pr-[300px];
+}
 
-        body:has(.header:hover) .container {
-            padding-top: 70px;
-        }
+body:has(.header:hover) .container {
+  @apply pt-[70px];
+}
 
-        .cyber-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(147, 51, 234, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: 0;
-        }
+.cyber-grid {
+  @apply fixed top-0 left-0 w-full h-full pointer-events-none z-0;
+  background-image: 
+    linear-gradient(rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
 
-        .container {
-            position: relative;
-            z-index: 1;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            /* --- Add padding to make room for collapsed sidebars --- */
-            padding-left: 30px;
-            padding-right: 30px;
-            padding-top: 25px; /* For the collapsed header */
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+.header {
+  @apply fixed top-0 left-0 right-0 z-30 bg-cyber-blue/90 border-b-2 border-cyber-purple backdrop-blur-lg shadow-[0_4px_20px_rgba(147,51,234,0.3)] transform translate-y-[calc(-100%+25px)] transition-transform duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] cursor-pointer h-[70px];
+}
 
-        .header {
-            background: rgba(15, 52, 96, 0.9);
-            border-bottom: 2px solid #9333ea;
-            padding: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 30;
-            transform: translateY(calc(-100% + 25px));
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            cursor: pointer;
-            
-            /* Ensure header is a relative positioning context for its children */
-            display: flex; /* Make the header a flex container to align logo */
-            align-items: center; /* Vertically center logo and controls */
-            justify-content: flex-start; /* Keep logo at the start */
-            height: 70px; /* Give header a defined height */
-        }
+/* When workspaces panel is expanded, adjust header position */
+body:has(.workspaces-panel:hover) .header,
+body:has(.workspaces-panel.expanded) .header {
+  @apply left-[250px] right-[0];
+}
 
-        /* Expanded state */
-        .header.expanded {
-            transform: translateY(0);
-            cursor: default;
-        }
+/* Expanded state - only on hover */
+.header:hover:not(.dragging) {
+  @apply translate-y-0 cursor-default;
+}
 
-        /* Hover fallback */
-        .header:hover:not(.dragging) {
-            transform: translateY(0);
-            cursor: default;
-        }
+/* Controls should always be visible when header is expanded */
+.header:hover .controls {
+  @apply opacity-100 pointer-events-auto;
+}
 
-        /* Style the collapsed header content */
-        .header .logo {
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 20px #9333ea;
-            color: #e0e6ff;
-            
-            /* Ensure logo stays on the left */
-            position: absolute;
-            left: 15px; /* Aligned with header padding */
-            top: 80%;
-            transform: translateY(-50%);
-            transition: opacity 0.3s ease;
-            opacity: 1;
-            font-size: 14px; /* Default size for collapsed */
-        }
+/* Style the collapsed header content */
+.header .logo {
+  @apply text-xl font-bold text-cyber-light absolute left-[30px] top-[80%] -translate-y-1/2 transition-opacity duration-300 opacity-100 text-sm;
+  text-shadow: 0 0 20px #9333ea;
+}
 
-        /* Hide logo when expanded, show controls */
-        .header:hover .logo,
-        .header.expanded .logo {
-            opacity: 0;
-        }
+/* When workspaces panel is expanded, move the logo further to the right */
+body:has(.workspaces-panel:hover) .header .logo,
+body:has(.workspaces-panel.expanded) .header .logo {
+  @apply left-[270px];
+}
 
-        .header .controls {
-            display: flex;
-            gap: 15px; /* Spacing between buttons */
-            align-items: center; /* Vertically align buttons */
-            flex-wrap: nowrap; /* Prevent wrapping to a new line */
-            
-            /* Positioning for centering, slightly to the left */
-            position: absolute; /* Take out of normal flow */
-            left: 50%; /* Start at the horizontal center of the parent */
-            transform: translateX(calc(-50% - 60px)); /* Pull back by half its width, then an additional 60px to the left */
-            
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
+.header .controls {
+  @apply flex gap-[15px] items-center flex-nowrap absolute left-1/2 -translate-x-[calc(50%-60px)] opacity-0 pointer-events-none transition-opacity duration-300;
+}
 
-        .header:hover .controls,
-        .header.expanded .controls {
-            opacity: 1;
-            pointer-events: auto;
-        }
+.header:hover .controls {
+  @apply opacity-100 pointer-events-auto;
+}
 
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 20px #9333ea;
-            color: #e0e6ff;
-            margin-bottom: 10px;
-        }
+/* Hide logo when expanded, show controls */
+.header:hover .logo,
+.header.expanded .logo {
+  @apply opacity-0;
+}
 
-        .controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+.header .controls {
+  @apply flex gap-[15px] items-center flex-nowrap absolute left-1/2 -translate-x-[calc(50%-60px)] opacity-0 pointer-events-none transition-opacity duration-300;
+}
+
+.header:hover .controls,
+.header.expanded .controls {
+  @apply opacity-100 pointer-events-auto;
+}
+
+.logo {
+  @apply text-xl font-bold text-cyber-light mb-[10px];
+  text-shadow: 0 0 20px #9333ea;
+}
+
+.controls {
+  @apply flex gap-[15px] items-center flex-wrap;
+}

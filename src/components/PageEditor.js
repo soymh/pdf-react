@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
-import './PageEditor.css';
 
 function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotification }) {
   // A4 dimensions and scaling constants
@@ -639,14 +638,14 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
   };
 
   return (
-    <div className="page-editor-modal">
-      <div className="page-editor">
-        <div className="page-editor-header">
-          <div className="page-editor-title">
+    <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[999999] bg-[rgba(13,14,22,0.98)] flex justify-center items-center backdrop-blur-lg animate-editorFadeIn">
+      <div className="w-full h-full flex flex-col bg-gradient-to-br from-[#10111b]/95 to-[#161824]/95 shadow-[0_0_50px_rgba(147,51,234,0.2)] border border-cyber-purple/20">
+        <div className="flex justify-between items-center p-[20px_30px] bg-gradient-to-r from-[#161824]/98 to-[#202230]/98 border-b-2 border-cyber-purple shadow-[0_2px_10px_rgba(0,0,0,0.3)] rounded-tl-xl rounded-tr-xl mb-[20px] h-[50px]">
+          <div className="flex items-center gap-[15px] text-white text-sm font-bold">
             <span>{space.name}</span>
-            <div className="page-navigation">
+            <div className="flex items-center gap-[10px] ml-[15px] p-[4px_12px] bg-gradient-to-r from-cyber-purple/10 to-cyber-purple/5 border border-cyber-purple/20 rounded-[15px] shadow-[0_0_0_1px_rgba(147,51,234,0.1),0_4px_10px_rgba(0,0,0,0.2)] backdrop-blur-lg text-xs">
               <button 
-                className="nav-btn" 
+                className="w-[30px] h-[30px] rounded-[15px] cursor-pointer flex items-center justify-center bg-cyber-purple/20 border-none text-white text-sm transition-all duration-200 hover:bg-cyber-purple/40"
                 onClick={previousPage} 
                 disabled={currentPageIndex === 0}
               >
@@ -654,7 +653,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
               </button>
               <small>Page {currentPageIndex + 1}/{pages.length}</small>
               <button
-                className="nav-btn"
+                className="w-[30px] h-[30px] rounded-[15px] cursor-pointer flex items-center justify-center bg-cyber-purple/20 border-none text-white text-sm transition-all duration-200 hover:bg-cyber-purple/40"
                 onClick={nextPage}
                 disabled={currentPageIndex === pages.length - 1}
               >
@@ -662,16 +661,16 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
               </button>
             </div>
           </div>
-          <div className="page-editor-actions">
-            <button className="page-editor-btn cancel" onClick={onClose}>Exit</button>
-            <button className="page-editor-btn apply" onClick={handleApplyCurrentPage}>Apply</button>
-            <button className="page-editor-btn save" onClick={handleSave}>Save All Changes</button>
+          <div className="flex gap-[10px]">
+            <button className="bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.2)] text-cyber-light py-[8px_16px] rounded-[8px] cursor-pointer text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 relative overflow-hidden hover:bg-[rgba(255,255,255,0.2)] hover:-translate-y-0.5 hover:shadow-[0_4px_15px_rgba(0,0,0,0.2)]" onClick={onClose}>Exit</button>
+            <button className="bg-[rgba(147,51,234,0.15)] border border-[rgba(147,51,234,0.4)] text-cyber-light py-[8px_16px] rounded-[8px] cursor-pointer text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 relative overflow-hidden hover:bg-[rgba(147,51,234,0.25)] hover:-translate-y-0.5 hover:shadow-[0_4px_15px_rgba(147,51,234,0.2)]" onClick={handleApplyCurrentPage}>Apply</button>
+            <button className="bg-[linear-gradient(45deg,rgba(147,51,234,0.9),rgba(167,71,254,0.9))] border border-[rgba(147,51,234,0.5)] text-cyber-light py-[8px_16px] rounded-[8px] cursor-pointer text-xs font-semibold uppercase tracking-[0.5px] transition-all duration-300 relative overflow-hidden hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(147,51,234,0.4),0_0_0_1px_rgba(147,51,234,0.5)]" onClick={handleSave}>Save All Changes</button>
           </div>
         </div>
         
-        <div className="page-editor-content" ref={containerRef} onClick={handleContainerClick} onWheel={handleWheel}> 
+        <div className="flex-1 relative overflow-hidden flex justify-center items-center bg-gradient-to-br from-[#0d0e16]/95 to-[#141621]/95 p-[40px_20px] pt-[90px] min-h-screen perspective-1000" ref={containerRef} onClick={handleContainerClick} onWheel={handleWheel}> 
           <div 
-            className="page-editor-canvas" 
+            className="relative bg-white max-h-[calc(100vh-200px)] w-auto shadow-[0_0_0_1px_rgba(147,51,234,0.15),0_0_20px_rgba(147,51,234,0.08),0_0_40px_rgba(0,0,0,0.2)] transition-all duration-300 translateZ-0 rounded-sm animation-none"
             ref={canvasRef}
             style={{
               width: `${canvasDimensions.width}px`,
@@ -683,7 +682,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
             {pages[currentPageIndex]?.captures.map(capture => (
                 <div
                   key={capture.id}
-                  className={`capture-container ${selectedCapture === capture.id ? 'selected' : ''}`}
+                  className={`absolute cursor-move select-none filter drop-shadow-[0_0_10px_rgba(0,0,0,0.3)] transition-filter duration-200 ${selectedCapture === capture.id ? 'selected' : ''}`}
                   style={{
                   // Position relative to the A4 canvas.
                   // These are A4-space coordinates, so they are multiplied by canvasDimensions.scale
@@ -696,7 +695,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                   onClick={(e) => handleCaptureClick(e, capture.id)}
                 >
                   <div
-                    className="capture-wrapper"
+                    className="relative transform-origin-center"
                     style={{
                       // Set explicit width and height based on original size and current scale
                       width: `${capture.originalSize.width * capture.scale.x}px`,
@@ -708,7 +707,7 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                     <img
                       src={capture.imageData}
                       alt="Captured content"
-                      className="capture-image"
+                      className="w-full h-full border-2 border-transparent transition-all duration-200"
                       draggable={false}
                       style={{
                         width: '100%', // Make image fill its parent wrapper
@@ -719,10 +718,10 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
                     
                     {selectedCapture === capture.id && (
                       <>
-                        <div className="resize-handle nw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'nw')} />
-                        <div className="resize-handle ne" onMouseDown={(e) => handleResizeStart(e, capture.id, 'ne')} />
-                        <div className="resize-handle sw" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
-                        <div className="resize-handle se" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
+                        <div className="absolute w-4 h-4 bg-cyber-purple/90 border-2 border-white rounded-full transition-all duration-200 opacity-100 block z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] top-[-8px] left-[-8px] cursor-nw-resize hover:scale-125 hover:bg-cyber-purple hover:shadow-[0_0_15px_rgba(147,51,234,0.5)]" onMouseDown={(e) => handleResizeStart(e, capture.id, 'nw')} />
+                        <div className="absolute w-4 h-4 bg-cyber-purple/90 border-2 border-white rounded-full transition-all duration-200 opacity-100 block z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] top-[-8px] right-[-8px] cursor-ne-resize hover:scale-125 hover:bg-cyber-purple hover:shadow-[0_0_15px_rgba(147,51,234,0.5)]" onMouseDown={(e) => handleResizeStart(e, capture.id, 'ne')} />
+                        <div className="absolute w-4 h-4 bg-cyber-purple/90 border-2 border-white rounded-full transition-all duration-200 opacity-100 block z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] bottom-[-8px] left-[-8px] cursor-sw-resize hover:scale-125 hover:bg-cyber-purple hover:shadow-[0_0_15px_rgba(147,51,234,0.5)]" onMouseDown={(e) => handleResizeStart(e, capture.id, 'sw')} />
+                        <div className="absolute w-4 h-4 bg-cyber-purple/90 border-2 border-white rounded-full transition-all duration-200 opacity-100 block z-[1000] shadow-[0_0_10px_rgba(0,0,0,0.3)] bottom-[-8px] right-[-8px] cursor-se-resize hover:scale-125 hover:bg-cyber-purple hover:shadow-[0_0_15px_rgba(147,51,234,0.5)]" onMouseDown={(e) => handleResizeStart(e, capture.id, 'se')} />
                       </>
                     )}
                   </div>
@@ -731,20 +730,20 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
           </div>
         </div>
 
-        <div className="page-editor-toolbar">
-          <button className="toolbar-btn" title="Zoom Out" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>🔍-</button>
-          <button className="toolbar-btn" title="Reset Zoom" onClick={() => { setZoomLevel(1);setPan({ x: 0, y: 0 });}}>100%</button> {/* NEW: Reset zoomOrigin here */}
-          <button className="toolbar-btn" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(4.0, prev + 0.1))}>🔍+</button>
+        <div className="fixed bottom-[30px] left-1/2 -translate-x-1/2 flex gap-3 bg-[rgba(22,24,36,0.90)] p-[12px_20px] rounded-xl z-[1000] border border-cyber-purple/20 shadow-[0_4px_12px_rgba(0,0,0,0.25),0_0_20px_rgba(147,51,234,0.1)] backdrop-blur-lg animation-none">
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Zoom Out" onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.1))}>🔍-</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Reset Zoom" onClick={() => { setZoomLevel(1);setPan({ x: 0, y: 0 });}}>100%</button> {/* NEW: Reset zoomOrigin here */}
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Zoom In" onClick={() => setZoomLevel(prev => Math.min(4.0, prev + 0.1))}>🔍+</button>
 
-          <button className="toolbar-btn" title="Center Selection" onClick={handleCenterSelection} disabled={!selectedCapture}>⌖</button>
-          <button className="toolbar-btn" title="Reset Rotation" onClick={handleResetRotation} disabled={!selectedCapture}>↻</button>
-          <button className="toolbar-btn" title="Reset Scale" onClick={handleResetScale} disabled={!selectedCapture}>1:1</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Center Selection" onClick={handleCenterSelection} disabled={!selectedCapture}>⌖</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Reset Rotation" onClick={handleResetRotation} disabled={!selectedCapture}>↻</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Reset Scale" onClick={handleResetScale} disabled={!selectedCapture}>1:1</button>
           
           {/* New Rotation Input and 90-degree buttons */}
-          <button className="toolbar-btn" title="Rotate Left 90°" onClick={() => handleRotate90('left')} disabled={!selectedCapture}>⟲ 90°</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Rotate Left 90°" onClick={() => handleRotate90('left')} disabled={!selectedCapture}>⟲ 90°</button>
           <input
             type="number"
-            className="toolbar-input"
+            className="w-[60px] h-10 rounded-lg p-0 px-2 text-base text-center transition-all duration-200 bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light outline-none focus:shadow-[0_0_0_2px_rgba(147,51,234,0.2)]"
             value={rotationInput}
             onChange={handleRotationInputChange}
             disabled={!selectedCapture}
@@ -753,34 +752,34 @@ function PageEditor({ space, onClose, onSave, initialPageIndex = 0, showNotifica
             min="-360"
             max="360"
           />
-          <button className="toolbar-btn" title="Rotate Right 90°" onClick={() => handleRotate90('right')} disabled={!selectedCapture}>90° ⟳</button>
+          <button className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" title="Rotate Right 90°" onClick={() => handleRotate90('right')} disabled={!selectedCapture}>90° ⟳</button>
 
           <button 
-            className="toolbar-btn" 
+            className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" 
             title="Bring to Front" 
             onClick={(e) => handleLayerChange(e, selectedCapture, 'front')} 
             disabled={!selectedCapture}
           >⬆</button>
           <button 
-            className="toolbar-btn" 
+            className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" 
             title="Send to Back" 
             onClick={(e) => handleLayerChange(e, selectedCapture, 'back')} 
             disabled={!selectedCapture}
           >⬇</button>
           <button 
-            className="toolbar-btn" 
+            className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" 
             title="Bring Forward" 
             onClick={(e) => handleLayerChange(e, selectedCapture, 'forward')} 
             disabled={!selectedCapture}
           >⇧</button>
           <button 
-            className="toolbar-btn" 
+            className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-cyber-purple/8 border border-cyber-purple/15 text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-cyber-purple/15 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(147,51,234,0.15)]" 
             title="Send Backward" 
             onClick={(e) => handleLayerChange(e, selectedCapture, 'backward')} 
             disabled={!selectedCapture}
           >⇩</button>
           <button
-            className="toolbar-btn delete-capture"
+            className="w-10 h-10 rounded-lg cursor-pointer flex items-center justify-center bg-[rgba(220,38,127,0.9)] border-2 border-white text-cyber-light text-lg transition-all duration-200 relative overflow-hidden hover:bg-[rgba(239,68,68,1)] hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(220,38,127,0.5)]"
             onClick={(e) => handleDeleteCaptureLocal(e, selectedCapture)}
             title="Delete Capture from Page"
             disabled={!selectedCapture}

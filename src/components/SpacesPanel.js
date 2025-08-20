@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SpaceItem from './SpaceItem';
-import './styles/spaces-panel.css';
 
 function SpacesPanel({ 
   spaces, 
@@ -68,17 +67,17 @@ function SpacesPanel({
   return (
     <div 
       ref={panelRef}
-      className={`spaces-panel ${isExpanded ? 'expanded' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`spaces-panel ${isExpanded ? 'expanded' : ''}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className="spaces-header">
-        <span>🎯 SPACES</span>
-        <button className="cyber-button" onClick={onCreateSpace} style={{ padding: '5px 10px', fontSize: '12px' }}>
+      <div className="flex justify-between items-center p-[15px] text-cyber-light border-b border-cyber-purple/40">
+        <span className="font-oxanium font-bold text-shadow-purple">🎯 SPACES</span>
+        <button className="bg-gradient-to-br from-[#533483] to-[#9333ea] border border-cyber-purple text-cyber-light py-[5px] px-[10px] cursor-pointer uppercase tracking-[1px] transition-all duration-300 relative overflow-hidden rounded-xl text-[12px] hover:-translate-y-0.5 active:translate-y-0" onClick={onCreateSpace}>
           ➕ ADD
         </button>
       </div>
-      <div className="spaces-list" id="spacesList">
+      <div className="flex-1 overflow-y-auto p-[10px]" id="spacesList">
         {spaces.length > 0 ? (
           spaces.map(space => (
             <SpaceItem
@@ -101,7 +100,7 @@ function SpacesPanel({
             />
           ))
         ) : (
-          <div className="empty-state">
+          <div className="text-center text-cyber-light/60 p-[40px] font-italic bg-cyber-purple/5 border-2 border-dashed border-cyber-purple/30 rounded-xl m-[20px]">
             <p>Create spaces to organize your captures</p>
           </div>
         )}

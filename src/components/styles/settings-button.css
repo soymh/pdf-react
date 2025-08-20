@@ -1,133 +1,55 @@
 .settings-button {
-  width: 30px;
-  height: 30px;
-  position: static;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-
-  /* The Fix: Make the button container invisible */
-  background: transparent;
-  border: none;
-  outline: none;
-
-  /* The Glow Effect & Shape */
-  border-radius: 50%; /* Keep the shadow circular */
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.8), 0 0 4px rgba(255, 0, 255, 0.5);
-
-  /* The Icon Color */
-  color: white;
-
-  /* Interaction */
-  transition: all 0.3s ease;
-
-  fill: currentColor;
+  @apply w-[30px] h-[30px] static flex items-center justify-center cursor-pointer p-0 bg-transparent border-none outline-none rounded-full shadow-[0_0_8px_rgba(0,255,255,0.8),0_0_4px_rgba(255,0,255,0.5)] text-white transition-all duration-300 fill-current;
 }
 
 .settings-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 1), 0 0 6px rgba(255, 0, 255, 0.7);
+  @apply scale-110 shadow-[0_0_12px_rgba(0,255,255,1),0_0_6px_rgba(255,0,255,0.7)];
 }
 
 .settings-menu-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1002;
-  backdrop-filter: blur(5px);
+  @apply fixed top-0 left-0 right-0 bottom-0 bg-black/70 flex items-center justify-center z-[1002] backdrop-blur-sm;
 }
 
 .settings-menu-content {
-  background: #1a1a2e;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(255, 0, 255, 0.5);
-  color: #00FFFF;
-  text-align: center;
-  width: 90%;
-  max-width: 400px;
-  position: relative;
-  border: 2px solid #00FFFF;
+  @apply bg-[#1a1a2e] p-[30px] rounded-lg shadow-[0_0_20px_rgba(0,255,255,0.8),0_0_40px_rgba(255,0,255,0.5)] text-cyan-300 text-center w-[90%] max-w-[400px] relative border-2 border-cyan-300;
 }
 
 .settings-menu-content h3 {
-  color: #FF00FF;
-  margin-bottom: 25px;
-  text-shadow: 0 0 8px #FF00FF;
+  @apply text-fuchsia-500 mb-[25px] text-shadow-fuchsia;
 }
 
 .setting-group {
-  margin-bottom: 20px;
-  text-align: left;
+  @apply mb-5 text-left;
 }
 
 .setting-group h4 {
-  color: #00FFFF;
-  margin-bottom: 15px;
-  font-size: 1.1em;
-  border-bottom: 1px dashed #00FFFF;
-  padding-bottom: 5px;
+  @apply text-cyan-300 mb-[15px] text-lg border-b border-dashed border-cyan-300 pb-[5px];
 }
 
 .setting-group label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  font-size: 0.95em;
-  cursor: pointer;
-  color: #B0E0E6; /* Light cyan for text */
+  @apply flex items-center mb-[10px] text-sm cursor-pointer text-cyan-200;
 }
 
 .setting-group input[type="radio"] {
-  margin-right: 10px;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid #00FFFF;
-  border-radius: 50%;
-  outline: none;
-  cursor: pointer;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  @apply mr-[10px] appearance-none w-[18px] h-[18px] border-2 border-cyan-300 rounded-full outline-none cursor-pointer relative flex items-center justify-center transition-all duration-200;
 }
 
 .setting-group input[type="radio"]:checked {
-  background-color: #FF00FF;
-  border-color: #FF00FF;
-  box-shadow: 0 0 5px #FF00FF, 0 0 10px #FF00FF inset;
+  @apply bg-fuchsia-500 border-fuchsia-500 shadow-[0_0_5px_#ff00ff,0_0_10px_#ff00ff_inset];
 }
 
 .setting-group input[type="radio"]:checked::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  transform: scale(1);
-  transition: transform 0.2s ease;
+  @apply content-[''] w-2 h-2 rounded-full scale-100 transition-transform duration-200;
 }
 
 .settings-menu-content .cyber-button {
-  margin-top: 25px;
-  width: 100%;
+  @apply mt-[25px] w-full;
 }
 
 .workspaces-panel-header-buttons {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: transparent;
-  z-index: 1001; 
+  @apply absolute top-[10px] left-[10px] bg-transparent z-[1001];
+}
+
+.text-shadow-fuchsia {
+  text-shadow: 0 0 8px #FF00FF;
 }

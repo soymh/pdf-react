@@ -1,24 +1,24 @@
 .spaces-panel {
-        /* --- Core Positioning --- */
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 20;
-  
-      /* --- Sizing and Style --- */
-      width: 300px;
-      background: rgba(15, 52, 96, 0.9);
-      border-left: 2px solid #9333ea;
-      backdrop-filter: blur(10px);
-      display: flex;
-      flex-direction: column;
-  
-      /* --- Animation --- */
-      transform: translateX(calc(100% - 25px));
-      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      cursor: pointer;
-        }
+  /* --- Core Positioning --- */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+
+  /* --- Sizing and Style --- */
+  width: 300px;
+  background: rgba(15, 52, 96, 0.9);
+  border-left: 2px solid #9333ea;
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+
+  /* --- Animation --- */
+  transform: translateX(calc(100% - 30px));
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: pointer;
+}
 
         /* --- NEW: Add class-based expansion instead of hover --- */
     .spaces-panel.expanded {
@@ -101,6 +101,8 @@
     .capture-thumbnail.dragging {
     z-index: 1000;
     }
+
+
 	.spaces-list {
             flex: 1;
             overflow-y: auto;

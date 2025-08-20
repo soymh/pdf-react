@@ -1,33 +1,16 @@
 .cyber-button {
-            background: linear-gradient(45deg, #533483, #9333ea);
-            border: 1px solid #9333ea;
-            color: #e0e6ff;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-family: inherit;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-        }
+  @apply bg-gradient-to-br from-[#533483] to-[#9333ea] border border-cyber-purple text-cyber-light py-[10px] px-[20px] cursor-pointer uppercase tracking-[1px] transition-all duration-300 relative overflow-hidden rounded-xl;
+}
 
-        .cyber-button:hover {
-            transform: translateY(-2px);
-        }
+.cyber-button:hover {
+  @apply -translate-y-0.5;
+}
 
-        .cyber-button:active {
-            transform: translateY(0);
-        }
+.cyber-button:active {
+  @apply translate-y-0;
+}
 
-        .cyber-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
+.cyber-button::before {
+  @apply content-[''] absolute top-0 left-[-100%] w-full h-full transition-all duration-500;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}

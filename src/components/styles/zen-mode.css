@@ -1,186 +1,153 @@
 body.zen-mode {
-    background: #000; /* Darken main UI background */
+  @apply bg-black;
 }
 
 body.zen-mode .workspaces-panel {
-    display: none; /* Workspaces left sidebar minimized (gone) */
+  @apply hidden;
 }
 
 body.zen-mode .header {
-    display: none; /* Top bar (header) minimized (gone) */
+  @apply hidden;
 }
 
 body.zen-mode .container {
-    padding-left: 0; /* Remove left padding */
-    padding-top: 0; /* Remove top padding */
-    padding-right: 30px; /* Keep space for the collapsed spaces panel */
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+  @apply pl-0 pt-0 pr-[30px] h-screen flex flex-col;
 }
 
 body.zen-mode .main-content {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    padding: 0; /* Remove any padding within main-content */
+  @apply flex-1 flex overflow-hidden relative p-0;
 }
 
 body.zen-mode .pdf-viewers {
-    flex: 1;
-    display: flex;
-    gap: 20px; /* Increased gap for better spacing */
-    padding: 20px; /* Increased padding */
-    overflow-x: hidden; /* Prevent horizontal scroll for wrapped content */
-    overflow-y: auto; /* Allow vertical scroll if PDFs wrap */
-    background: transparent;
-    align-items: flex-start; /* Align items to the start */
-    justify-content: flex-start; /* Justify items to the start */
-    padding-right: 0; /* No right padding in zen mode, handled by container */
-    flex-wrap: wrap; /* Allow PDFs to wrap to the next line */
+  @apply flex-1 flex gap-5 p-5 overflow-x-hidden overflow-y-auto bg-transparent items-start justify-start pr-0 flex-wrap;
+}
+
+/* Full width for single PDF mode */
+body.zen-mode .pdf-viewers.single-pdf-zen-mode {
+  @apply p-0 gap-0;
 }
 
 body.zen-mode .pdf-viewer {
-    flex-shrink: 0;
-    flex-grow: 1; /* Allow growing to fill space */
-    flex-basis: 0; /* Allow shrinking below content size */
-    min-width: 45%; /* Ensure minimum width for two columns initially */
-    height: calc(100vh - 40px); /* Adjust height considering new padding */
-    max-width: unset; /* Remove max-width constraint */
-    min-width: unset; /* Remove min-width constraint */
-    border: 2px solid rgba(147, 51, 234, 0.6);
-    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+  @apply flex-shrink-0 flex-grow flex-basis-0 min-w-[45%] h-[calc(100vh-40px)] border-2 border-cyber-purple/60 shadow-[0_0_30px_rgba(147,51,234,0.5)] max-w-none min-w-none;
+}
+
+/* Fullscreen style for single PDF zen mode */
+body.zen-mode .pdf-viewer.single-pdf-zen-mode {
+  @apply w-full h-[100vh] min-w-full max-w-full m-0 rounded-none flex flex-col;
+  border-radius: 0;
 }
 
 /* Spaces sidebar remains hoverable in zen mode - remove the !important transform */
 body.zen-mode .spaces-panel {
-    /* REMOVED: transform: translateX(0) !important; */
-    pointer-events: auto; /* Ensure it's clickable */
-    z-index: 50; /* Ensure it's on top */
-    background: rgba(15, 52, 96, 0.98); /* Slightly more opaque */
-    box-shadow: -15px 0 50px rgba(0, 0, 0, 0.7); /* Stronger shadow */
+  @apply pointer-events-auto z-[50] bg-cyber-blue/98 shadow-[-15px_0_50px_rgba(0,0,0,0.7)];
 }
 
 /* Ensure the hover effect still works in zen mode */
 body.zen-mode .spaces-panel:hover,
 body.zen-mode .spaces-panel.expanded {
-    transform: translateX(0); /* This original rule should now take effect on hover */
+  @apply translate-x-0;
 }
 
 /* NEW: Ensure the header and workspaces panel are fully hidden, not just translated */
 body.zen-mode .workspaces-panel,
 body.zen-mode .header {
-    left: -100vw; /* Move off-screen to the left */
-    /* Or display: none; */
+  @apply -left-[100vw];
 }
 
 /* Zen Mode Exit Button (Bottom Left) */
 .zen-exit-button {
-    position: fixed;
-    bottom: 30px; /* Aligned with the new Zen toggle button */
-    left: 30px; /* Positioned on the left */
-    background: rgba(220, 38, 127, 0.9); /* Red */
-    border: 1px solid  #fff;
-    color: #fff;
-    padding: 8px 15px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    z-index: 10000; /* High z-index */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s ease;
+  @apply fixed bottom-[30px] left-[30px] bg-[#dc267f]/90 border border-white text-white p-2 rounded-[20px] cursor-pointer text-sm font-bold z-[10000] shadow-[0_4px_15px_rgba(0,0,0,0.4)] transition-all duration-200;
 }
 
 .zen-exit-button:hover {
-    background: rgba(239, 68, 68, 1); /* Brighter red on hover */
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  @apply bg-[#ef4444]/100 scale-105 shadow-[0_6px_20px_rgba(0,0,0,0.6)];
 }
 
 /* Zen Mode specific styles for PdfViewer */
 body.zen-mode .pdf-viewer .pdf-header {
-    background: linear-gradient(135deg, rgba(83, 52, 131, 0.7), rgba(147, 51, 234, 0.6));
-    border-bottom: none; /* Remove bottom border in zen mode */
-    padding: 10px;
-    display: flex;
-    justify-content: center; /* Center controls */
-    align-items: center;
-    transition: all 0.3s ease;
+  @apply bg-gradient-to-br from-[#533483]/70 to-[#9333ea]/60 border-b-0 p-[10px] flex justify-center items-center transition-all duration-300;
 }
 
 body.zen-mode .pdf-viewer .pdf-header:hover {
-    background: linear-gradient(135deg, rgba(83, 52, 131, 0.95), rgba(147, 51, 234, 0.8));
+  @apply bg-gradient-to-br from-[#533483]/95 to-[#9333ea]/80;
 }
 
 body.zen-mode .pdf-viewer .pdf-title {
-    opacity: 0;
-    pointer-events: none;
-    position: absolute; /* Take it out of flow */
-    transform: translateY(-100%);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+  @apply opacity-0 pointer-events-none absolute -translate-y-full transition-opacity duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] translate-y-0 static w-full text-center;
 }
 
 body.zen-mode .pdf-viewer:hover .pdf-title {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-    position: static; /* Put it back in flow on hover */
-    width: 100%; /* Ensure it takes full width */
-    text-align: center;
+  @apply opacity-100 pointer-events-auto static w-full text-center;
 }
 
 body.zen-mode .pdf-viewer .pdf-controls {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    display: flex; /* Ensure it's a flex container */
-    gap: 10px; /* Spacing between buttons */
+  @apply opacity-0 pointer-events-none transition-opacity duration-300 flex gap-[10px];
 }
 
 body.zen-mode .pdf-viewer:hover .pdf-controls {
-    opacity: 1;
-    pointer-events: auto;
+  @apply opacity-100 pointer-events-auto;
 }
 
 /* Hide the remove PDF button */
 body.zen-mode .pdf-viewer .pdf-controls .pdf-nav-btn[title="Remove PDF"] {
-    display: none;
+  @apply hidden;
+}
+
+/* Fullscreen style for single PDF zen mode */
+body.zen-mode .pdf-viewer.single-pdf-zen-mode {
+  @apply w-[95vw] h-[95vh] min-w-[95vw] max-w-[95vw] m-auto flex flex-col;
+}
+
+/* Remove padding for single PDF mode container */
+body.zen-mode .pdf-viewers.single-pdf-zen-mode {
+  @apply p-0;
+}
+
+body.zen-mode .pdf-viewer.single-pdf-zen-mode .pdf-header {
+  @apply p-[15px];
+}
+
+body.zen-mode .pdf-viewer.single-pdf-zen-mode .pdf-title {
+  @apply opacity-100 text-lg;
+}
+
+body.zen-mode .pdf-viewer.single-pdf-zen-mode .pdf-controls {
+  @apply opacity-100 flex gap-[15px];
+}
+
+/* Make the canvas container responsive to PDF scale */
+body.zen-mode .pdf-viewer.single-pdf-zen-mode > div.relative {
+  @apply flex items-center justify-center p-0 flex-grow w-full h-full;
+  height: auto;
+  min-height: 0;
+}
+
+body.zen-mode .pdf-viewer.single-pdf-zen-mode > div.relative canvas {
+  @apply max-w-full max-h-full m-auto w-full h-full object-contain;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Use transform to scale the canvas instead of changing its dimensions */
+body.zen-mode .pdf-viewer.single-pdf-zen-mode canvas {
+  transform-origin: center center;
+  transform: scale(1.5); /* Adjust this value as needed */
+}
+
+/* Hide overflow to prevent scrollbars */
+body.zen-mode .pdf-viewer.single-pdf-zen-mode > div.relative {
+  overflow: hidden;
 }
 
 /* Zen Mode Toggle Button (Bottom Right) */
 .zen-mode-toggle-button {
-    position: fixed;
-    bottom: 30px; /* Consistent with the exit button */
-    right: 30px; /* Positioned on the right */
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #9333ea, #533483);
-    border: 2px solid #fff;
-    color: #e0e6ff;
-    font-size: 0.8em;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10000;
-    box-shadow: 0 5px 20px rgba(147, 51, 234, 0.6);
-    transition: all 0.3s ease;
-    text-align: center;
-    line-height: 1.2;
-    padding: 5px;
+  @apply fixed bottom-[30px] right-[30px] w-[60px] h-[60px] rounded-full bg-gradient-to-br from-cyber-purple to-[#533483] border-2 border-white text-cyber-light text-xs font-bold flex items-center justify-center cursor-pointer z-[10000] shadow-[0_5px_20px_rgba(147,51,234,0.6)] transition-all duration-300 text-center leading-[1.2] p-[5px];
 }
 
 .zen-mode-toggle-button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 30px rgba(147, 51, 234, 0.8);
-    background: linear-gradient(45deg, #a752eb, #6a44a0);
+  @apply scale-110 shadow-[0_8px_30px_rgba(147,51,234,0.8)] bg-gradient-to-br from-[#a752eb] to-[#6a44a0];
 }
 
 .zen-mode-toggle-button:active {
-    transform: scale(0.95);
-    box-shadow: 0 2px 10px rgba(147, 51, 234, 0.4);
+  @apply scale-95 shadow-[0_2px_10px_rgba(147,51,234,0.4)];
 }

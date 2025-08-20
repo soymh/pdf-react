@@ -1,221 +1,110 @@
-        .selection-overlay {
-            position: absolute;
-            border: 3px dashed #9333ea;
-            background: rgba(147, 51, 234, 0.15);
-            pointer-events: none;
-            box-shadow: 
-                0 0 20px rgba(147, 51, 234, 0.8),
-                inset 0 0 20px rgba(147, 51, 234, 0.2);
-            border-radius: 4px;
-            backdrop-filter: blur(2px);
-        }
+.selection-overlay {
+  @apply absolute border-2 border-dashed border-cyber-purple bg-cyber-purple/20 pointer-events-none shadow-[0_0_15px_rgba(147,51,234,0.5)] rounded;
+}
 
-        /* --- Collapsible SpacesPanel --- */
-        .spaces-panel {
-            position: fixed; /* Changed from absolute */
-            top: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 20;
-            width: 350px;
-            background: rgba(15, 52, 96, 0.95);
-            border-left: 3px solid #9333ea;
-            backdrop-filter: blur(20px);
-            display: flex;
-            flex-direction: column;
-            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-            /* --- New animation properties --- */
-            transform: translateX(calc(100% - 30px));
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+/* --- Collapsible SpacesPanel --- */
+.spaces-panel {
+  @apply fixed top-0 right-0 bottom-0 z-20 w-[350px] bg-cyber-blue/95 border-l-3 border-cyber-purple backdrop-blur-2xl flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform translate-x-[calc(100%-30px)] transition-transform duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)];
+}
 
-        .spaces-panel:hover,
-        .spaces-panel.expanded { /* Add class for pinned state */
-            transform: translateX(0);
-        }
+.spaces-panel:hover,
+.spaces-panel.expanded { /* Add class for pinned state */
+  @apply translate-x-0;
+}
 
+/* Enhanced capture grid */
+.capture-grid {
+  @apply grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3 min-h-[120px] p-[15px] border-2 border-dashed border-cyber-purple/40 rounded-lg bg-cyber-purple/8 transition-all duration-300;
+}
 
-        /* Enhanced capture grid */
-        .capture-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Larger thumbnails */
-            gap: 12px;
-            min-height: 120px;
-            padding: 15px;
-            border: 2px dashed rgba(147, 51, 234, 0.4);
-            border-radius: 8px;
-            background: rgba(147, 51, 234, 0.08);
-            transition: all 0.3s ease;
-        }
+/* Enhanced capture thumbnails */
+.capture-thumbnail {
+  @apply w-full h-[120px] object-contain rounded-lg cursor-grab transition-all duration-300 border-2 border-cyber-purple/30 bg-white p-1 shadow-[0_4px_15px_rgba(0,0,0,0.3)];
+}
 
-        /* Enhanced capture thumbnails */
-        .capture-thumbnail {
-            width: 100%;
-            height: 120px; /* Increased height */
-            object-fit: contain; /* Changed from cover to contain for better readability */
-            border-radius: 8px;
-            cursor: grab;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(147, 51, 234, 0.3);
-            background: white;
-            padding: 4px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
+.capture-thumbnail:hover {
+  @apply scale-105 border-cyber-purple/80 shadow-[0_8px_25px_rgba(147,51,234,0.4)] z-10;
+}
 
-        .capture-thumbnail:hover {
-            transform: scale(1.08);
-            border-color: rgba(147, 51, 234, 0.8);
-            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.4);
-            z-index: 10;
-        }
+/* Enhanced page containers */
+.page-container {
+  @apply bg-cyber-dark/40 border-2 border-cyber-purple/30 rounded-xl mb-5 p-[15px] transition-all duration-300;
+}
 
-        /* Enhanced page containers */
-        .page-container {
-            background: rgba(10, 10, 10, 0.4);
-            border: 2px solid rgba(147, 51, 234, 0.3);
-            border-radius: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            transition: all 0.3s ease;
-        }
+.page-container:hover {
+  @apply border-cyber-purple/60 bg-cyber-dark/60;
+}
 
-        .page-container:hover {
-            border-color: rgba(147, 51, 234, 0.6);
-            background: rgba(10, 10, 10, 0.6);
-        }
+.page-header {
+  @apply flex justify-between items-center mb-[15px] pb-[10px] border-b-2 border-cyber-purple/30;
+}
 
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(147, 51, 234, 0.3);
-        }
+.page-title {
+  @apply text-sm text-cyber-light/90 font-bold;
+  text-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
+}
 
-        .page-title {
-            font-size: 14px;
-            color: rgba(224, 230, 255, 0.9);
-            font-weight: bold;
-            text-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
-        }
+/* Zoom functionality for capture thumbnails */
+.capture-thumbnail-container {
+  @apply relative overflow-hidden rounded-lg;
+}
 
-        /* Zoom functionality for capture thumbnails */
-        .capture-thumbnail-container {
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-        }
+.capture-thumbnail-container .delete-capture-btn {
+  @apply absolute top-[5px] right-[5px] bg-[#dc267f]/90 border border-white/30 text-white w-5 h-5 rounded-full text-xs font-bold cursor-pointer opacity-0 transition-all duration-200 z-10 shadow-[0_0_5px_rgba(0,0,0,0.2)];
+}
 
-        .capture-thumbnail-container .delete-capture-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(220, 38, 127, 0.9); /* Red */
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            opacity: 0;
-            transition: all 0.2s ease;
-            z-index: 10;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
+capture-thumbnail-container:hover .delete-capture-btn,
+.capture-thumbnail-container .delete-capture-btn:hover {
+  @apply opacity-100 scale-110 bg-[#ef4444]/100;
+}
 
-        capture-thumbnail-container:hover .delete-capture-btn,
-        .capture-thumbnail-container .delete-capture-btn:hover {
-            opacity: 1;
-            transform: scale(1.1);
-            background: rgba(239, 68, 68, 1); /* Brighter red on hover */
-        }
+/* --- Keep existing empty state styles --- */
+.empty-state {
+  @apply text-center text-cyber-light/70 p-5 font-italic bg-cyber-purple/5 border-2 border-dashed border-cyber-purple/30 rounded-xl m-5;
+}
 
-        /* --- Keep existing empty state styles --- */
-        .empty-state {
-            text-align: center;
-            color: rgba(224, 230, 255, 0.7);
-            padding: 50px 20px;
-            font-style: italic;
-            background: rgba(147, 51, 234, 0.05);
-            border: 2px dashed rgba(147, 51, 234, 0.3);
-            border-radius: 12px;
-            margin: 20px;
-        }
+.capture-thumbnail-zoom {
+  @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] max-w-[80vw] max-h-[80vh] border-3 border-cyber-purple rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-white p-[10px];
+}
 
-        .capture-thumbnail-zoom {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            max-width: 80vw;
-            max-height: 80vh;
-            border: 3px solid #9333ea;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            background: white;
-            padding: 10px;
-        }
+.zoom-overlay {
+  @apply fixed top-0 left-0 w-full h-full bg-black/80 z-[999] backdrop-blur-sm;
+}
 
-        .zoom-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-            backdrop-filter: blur(5px);
-        }
+/* Enhanced empty states */
+.empty-state {
+  @apply text-center text-cyber-light/70 p-5 font-italic bg-cyber-purple/5 border-2 border-dashed border-cyber-purple/30 rounded-xl m-5;
+}
 
-        /* Enhanced empty states */
-        .empty-state {
-            text-align: center;
-            color: rgba(224, 230, 255, 0.7);
-            padding: 50px 20px;
-            font-style: italic;
-            background: rgba(147, 51, 234, 0.05);
-            border: 2px dashed rgba(147, 51, 234, 0.3);
-            border-radius: 12px;
-            margin: 20px;
-        }
+.empty-state h3 {
+  @apply text-cyber-purple text-shadow-purple mb-[15px] text-lg;
+}
 
-        .empty-state h3 {
-            color: #9333ea;
-            text-shadow: 0 0 15px rgba(147, 51, 234, 0.8);
-            margin-bottom: 15px;
-            font-size: 20px;
-        }
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .pdf-viewers:has(.pdf-viewer:nth-child(2):last-child) .pdf-viewer {
+    @apply min-w-[calc(50vw-100px)] max-w-[calc(50vw-100px)];
+  }
+}
 
-        /* Responsive adjustments */
-        @media (max-width: 1200px) {
-            .pdf-viewers:has(.pdf-viewer:nth-child(2):last-child) .pdf-viewer {
-                min-width: calc(50vw - 100px);
-                max-width: calc(50vw - 100px);
-            }
-        }
+@media (max-width: 900px) {
+  .pdf-viewer {
+    @apply min-w-full max-w-full;
+  }
+  
+  .spaces-panel {
+    @apply w-[300px];
+  }
+  
+  .pdf-viewers {
+    @apply pr-[320px];
+  }
+}
 
-        @media (max-width: 900px) {
-            .pdf-viewer {
-                min-width: 100%;
-                max-width: 100%;
-            }
-            
-            .spaces-panel {
-                width: 300px;
-            }
-            
-            .pdf-viewers {
-                padding-right: 320px;
-            }
-        }
-        .selection-overlay {
-            position: absolute;
-            border: 2px dashed #9333ea;
-            background: rgba(147, 51, 234, 0.2);
-            pointer-events: none;
-            box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
-        }
+.selection-overlay {
+  @apply absolute border-2 border-dashed border-cyber-purple bg-cyber-purple/20 pointer-events-none shadow-[0_0_15px_rgba(147,51,234,0.5)];
+}
+
+.text-shadow-purple {
+  text-shadow: 0 0 15px rgba(147, 51, 234, 0.8);
+}

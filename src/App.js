@@ -39,18 +39,6 @@ import WorkspacesPanel from './components/WorkspacesPanel';
 import Notification from './components/Notification';
 import SettingsMenu from './components/SettingsMenu'; // Import SettingsMenu
 import upscaleImage from './upscaleImage'; // Import the new upscaleImage module
-import './components/styles/body.css';
-// import './components/styles/cyber-button.css'; //Not needed
-// import './components/styles/modals.css'; //Not needed
-import './components/styles/notification.css';
-// import './components/styles/pdf-viewer.css'; //Not needed
-import './components/styles/pdf-viewers.css';
-// import './components/styles/selection.css'; //Not needed
-import './components/styles/settings-button.css';
-// import './components/styles/spaces-panel.css'; //Not needed
-import './components/styles/upscale.css';
-import './components/styles/workspaces.css';
-import './components/styles/zen-mode.css';
 
 GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
@@ -980,7 +968,11 @@ function App() {
 
   return (
     <>
-      <div className="cyber-grid"></div>
+      <div className="fixed top-0 left-0 w-full h-full bg-[linear-gradient(135deg,#0a0a0a_0%,#1a0a2e_25%,#16213e_50%,#0f3460_75%,#533483_100%)] pointer-events-none z-0" 
+        style={{
+          backgroundImage: 'linear-gradient(rgba(147, 51, 234, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(147, 51, 234, 0.1) 1px, transparent 1px)',
+          backgroundSize: '50px 50px'
+        }}></div>
 
       <WorkspacesPanel
         workspaces={workspaces}
@@ -994,7 +986,7 @@ function App() {
         onImport={() => document.getElementById('importWorkspaceInput').click()}
         renderSettingsButton={() => (
           <button
-            className="settings-button"
+            className="w-[30px] h-[30px] static flex items-center justify-center cursor-pointer p-0 bg-transparent border-none outline-none rounded-full shadow-[0_0_8px_rgba(0,255,255,0.8),0_0_4px_rgba(255,0,255,0.5)] text-white transition-all duration-300 fill-current hover:scale-110 hover:shadow-[0_0_12px_rgba(0,255,255,1),0_0_6px_rgba(255,0,255,0.7)]"
             onClick={() => setShowSettingsMenu(true)}
             title="Settings"
           >
@@ -1003,7 +995,7 @@ function App() {
         )}
       />
 
-      <div className="container">
+      <div className="relative z-10 h-screen flex flex-col pl-[30px] pr-[30px] pt-[25px] transition-all duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]">
         <Header
           onLoadClick={() => activeWorkspaceId && document.getElementById('fileInput').click()}
           onCreateSpace={() => activeWorkspaceId && setIsSpaceModalOpen(true)}
@@ -1012,9 +1004,9 @@ function App() {
           isZenMode={isZenMode}
         />
 
-        <div className="main-content">
+        <div className="flex-1 flex overflow-hidden relative">
           <div
-            className={`pdf-viewers ${isSinglePdfZenMode ? 'single-pdf-zen-mode' : ''}`}
+            className={`flex-1 flex gap-[15px] p-[15px] overflow-x-auto bg-cyber-dark/50 scroll-smooth items-start ${isSinglePdfZenMode ? 'single-pdf-zen-mode p-0' : 'pr-[320px]'}`}
             id="pdfViewers"
             style={{ '--pdf-count': pdfsToRender.length || 1 }}
           >
@@ -1040,13 +1032,13 @@ function App() {
                 />
               ))
             ) : (
-              <div className="empty-state">
-                <h3>🌌 READY FOR DIGITAL EXPLORATION</h3>
+              <div className="text-center text-cyber-light/70 p-[40px] font-italic bg-cyber-purple/5 border-2 border-dashed border-cyber-purple/30 rounded-xl m-[20px]">
+                <h3 className="text-cyber-purple text-shadow-purple mb-[15px] text-lg">🌌 READY FOR DIGITAL EXPLORATION</h3>
                 <p>{activeWorkspace ? (isZenMode && isSinglePdfZenMode ? 'Load PDFs to view in single mode.' : 'Load your PDFs to begin.') : 'Create or select a workspace.'}</p>
               </div>
             )}
             {isZenMode && isSinglePdfZenMode && livePdfDocs.length > 1 && (
-              <div className="pdf-number-indicator">
+              <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-cyber-purple/90 text-white px-4 py-2 rounded-full text-sm font-bold z-50">
                 {activeSinglePdfIndex + 1} / {livePdfDocs.length}
               </div>
             )}
@@ -1075,7 +1067,7 @@ function App() {
       <input
         type="file"
         id="fileInput"
-        className="file-input"
+        className="hidden"
         multiple
         accept=".pdf"
         onChange={handleFileSelect}
@@ -1086,7 +1078,7 @@ function App() {
       <input
         type="file"
         id="importWorkspaceInput"
-        className="file-input"
+        className="hidden"
         accept=".json"
         onChange={handleImportWorkspace}
       />
@@ -1106,10 +1098,10 @@ function App() {
       )}
 
       {zoomedCapture && createPortal(
-        <div className="zoom-overlay" onClick={handleZoomOverlayClick}>
+        <div className="fixed top-0 left-0 w-full h-full bg-black/80 z-50 backdrop-blur-sm" onClick={handleZoomOverlayClick}>
           <img
             src={zoomedCapture.imageData}
-            className="capture-thumbnail-zoom"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] max-w-[80vw] max-h-[80vh] border-3 border-cyber-purple rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-white p-[10px]"
             alt="Zoomed capture"
           />
           <div
@@ -1151,7 +1143,7 @@ function App() {
 
       {isZenMode && createPortal(
         <button
-          className="zen-exit-button"
+          className="fixed bottom-[30px] left-[30px] bg-[#dc267f]/90 border border-white text-white p-2 rounded-[20px] cursor-pointer text-sm font-bold z-[10000] shadow-[0_4px_15px_rgba(0,0,0,0.4)] transition-all duration-200 hover:bg-[#ef4444]/100 hover:scale-105 hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]"
           onClick={toggleZenMode}
           title="Exit Zen Mode (Esc)"
         >
@@ -1162,7 +1154,7 @@ function App() {
 
       {createPortal(
         <button
-          className="zen-mode-toggle-button"
+          className="fixed bottom-[30px] right-[30px] w-[60px] h-[60px] rounded-full bg-gradient-to-br from-cyber-purple to-[#533483] border-2 border-white text-cyber-light text-xs font-bold flex items-center justify-center cursor-pointer z-[10000] shadow-[0_5px_20px_rgba(147,51,234,0.6)] transition-all duration-300 text-center leading-[1.2] p-[5px] hover:scale-110 hover:shadow-[0_8px_30px_rgba(147,51,234,0.8)] active:scale-95 active:shadow-[0_2px_10px_rgba(147,51,234,0.4)]"
           onClick={() => {
             if (isZenMode) {
               // In Zen mode, toggle single/multi PDF view

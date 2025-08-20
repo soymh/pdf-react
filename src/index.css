@@ -1,13 +1,1690 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --cyber-delete-icon-color: #ff6666; /* Red for delete */
+    --cyber-delete-icon-hover-color: #ff0000; /* Brighter red on hover */
+    --cyber-text-color-light: #00e6e6; /* Bright cyan for text */
+    /* Ensure these are consistent with your existing theme, or adjust as needed */
+    --cyber-panel-bg: rgba(13, 22, 33, 0.8);
+    --cyber-hover-bg: rgba(26, 44, 66, 0.8);
+    --cyber-active-bg: rgba(30, 60, 90, 0.9);
+    --cyber-active-border: #9333ea; /* Purple */
+    --cyber-glow-color: #9333ea; /* Purple glow */
+    --cyber-border-color: #007bff; /* Blue border */
+    --cyber-accent-color: #f7df1e; /* Yellow accent */
+    --cyber-input-bg: #0d1621;
+  }
+  
+  body {
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Rajdhani', sans-serif;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+    color: #e0e6ff;
+    overflow: hidden;
+    height: 100vh;
+  }
+  
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+      monospace;
+  }
+  
+  /* Apply Oxanium to headers and prominent display text */
+  .workspaces-header,
+  .spaces-header,
+  .modal h3,
+  .logo, /* This targets the header logo text */
+  .pdf-title,
+  .empty-state h3 {
+    font-family: 'Oxanium', sans-serif;
+    font-weight: 700; /* Use a bold weight for impact */
+  }
+  
+  /* Apply Fira Code to inputs for a clean, code-like aesthetic */
+  .workspace-rename-input,
+  .modal input {
+    font-family: 'Fira Code', monospace; /* Changed from 'Inter' */
+  }
+  
+  /* Ensure cyber-buttons and other UI text also use Rajdhani */
+  .cyber-button,
+  .pdf-nav-btn,
+  .zen-mode-toggle-button, /* The new circular button */
+  .notification,
+  .empty-state p {
+    font-family: 'Rajdhani', sans-serif;
+  }
+  
+  /* The .workspace-name-display should also inherit Rajdhani from body,
+  but you can explicitly set it if needed for consistency. */
+  .workspace-name-display {
+    font-family: 'Rajdhani', sans-serif;
+  }
+  
+  body:has(.workspaces-panel:hover) .container {
+    padding-left: 250px;
+  }
+  
+  /* body:has(.spaces-panel:hover) .container {
+    padding-right: 50px;
+  } */
+  
+  body:has(.header:hover) .container {
+    padding-top: 70px;
+  }
+  
+  .cyber-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  .container {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* --- Add padding to make room for collapsed sidebars --- */
+    padding-left: 30px;
+    padding-right: 30px;
+    padding-top: 25px; /* For the collapsed header */
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .header {
+    background: rgba(15, 52, 96, 0.9);
+    border-bottom: 2px solid #9333ea;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    transform: translateY(calc(-100% + 25px));
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+    
+    /* Ensure header is a relative positioning context for its children */
+    display: flex; /* Make the header a flex container to align logo */
+    align-items: center; /* Vertically center logo and controls */
+    justify-content: flex-start; /* Keep logo at the start */
+    height: 70px; /* Give header a defined height */
+  }
+  
+  /* Expanded state */
+  .header.expanded {
+    transform: translateY(0);
+    cursor: default;
+  }
+  
+  /* Hover fallback */
+  .header:hover:not(.dragging) {
+    transform: translateY(0);
+    cursor: default;
+  }
+  
+  /* Style the collapsed header content */
+  .header .logo {
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 20px #9333ea;
+    color: #e0e6ff;
+    
+    /* Ensure logo stays on the left */
+    position: absolute;
+    left: 15px; /* Aligned with header padding */
+    top: 80%;
+    transform: translateY(-50%);
+    transition: opacity 0.3s ease;
+    opacity: 1;
+    font-size: 14px; /* Default size for collapsed */
+  }
+  
+  /* Hide logo when expanded, show controls */
+  .header:hover .logo,
+  .header.expanded .logo {
+    opacity: 0;
+  }
+  
+  .header .controls {
+    display: flex;
+    gap: 15px; /* Spacing between buttons */
+    align-items: center; /* Vertically align buttons */
+    flex-wrap: nowrap; /* Prevent wrapping to a new line */
+    
+    /* Positioning for centering, slightly to the left */
+    position: absolute; /* Take out of normal flow */
+    left: 50%; /* Start at the horizontal center of the parent */
+    transform: translateX(calc(-50% - 60px)); /* Pull back by half its width, then an additional 60px to the left */
+    
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  
+  .header:hover .controls,
+  .header.expanded .controls {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  .logo {
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 0 0 20px #9333ea;
+    color: #e0e6ff;
+    margin-bottom: 10px;
+  }
+  
+  .controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .cyber-button {
+    background: linear-gradient(45deg, #533483, #9333ea);
+    border: 1px solid #9333ea;
+    color: #e0e6ff;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  
+  .cyber-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  .cyber-button:active {
+    transform: translateY(0);
+  }
+  
+  .cyber-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    /* Remove the fixed margins */
+    margin-left: 0;
+    margin-top: 0;
+  }
+  /* --- Styles for the new WorkspacesPanel --- */
+  .workspaces-panel {
+    position: fixed; /* Changed from absolute */
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 25;
+    width: 250px;
+    background: rgba(10, 10, 20, 0.95);
+    border-right: 2px solid #9333ea;
+    backdrop-filter: blur(15px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    /* --- New animation properties --- */
+    transform: translateX(calc(-100% + 30px));
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .workspaces-panel:hover,
+  .workspaces-panel.expanded { /* Add class for pinned state */
+    transform: translateX(0);
+  }
+  
+  .workspaces-header {
+  font-size: 20px;
+  text-align: center;
+  padding: 15px;
+  color: #e0e6ff;
+  text-shadow: 0 0 15px #9333ea;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.4);
+  }
+  
+  .workspaces-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Space between workspace items */
+  padding: 15px; /* Add padding to the list itself */
+  margin-top: 0; /* Remove top margin if inherited */
+  flex: 1; /* Allow the list to take available space */
+  overflow-y: auto; /* Allow scrolling if many workspaces */
+  }
+  
+  .workspace-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Pushes name/input to left, delete to right */
+  padding: 8px 12px;
+  border: 1px solid var(--cyber-border-color);
+  border-radius: 6px;
+  background-color: var(--cyber-panel-bg);
+  cursor: pointer; /* Overall item is clickable to set active */
+  transition: all 0.2s ease-in-out;
+  position: relative; /* IMPORTANT: Allows delete button to be absolutely positioned within it */
+  overflow: hidden; /* Hide overflow content if name is too long */
+  }
+  
+  .workspace-item:hover {
+  background-color: var(--cyber-hover-bg);
+  border-color: var(--cyber-accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .workspace-item.active {
+  background-color: var(--cyber-active-bg);
+  border-color: var(--cyber-active-border);
+  box-shadow: 0 0 15px var(--cyber-glow-color);
+  }
+  
+  .workspace-name-display {
+  flex-grow: 1; /* Allows name to take available space */
+  padding-right: 10px; /* Space before delete button area */
+  white-space: nowrap; /* Prevents text wrapping */
+  overflow: hidden; /* Hides overflowing text */
+  text-overflow: ellipsis; /* Adds "..." for overflow */
+  font-weight: bold;
+  color: var(--cyber-text-color-light);
+  transition: color 0.2s ease;
+  }
+  
+  .workspace-name-display:hover {
+  color: var(--cyber-accent-color); /* Change color on hover to indicate clickability for rename */
+  }
+  
+  .workspace-rename-input {
+  flex-grow: 1;
+  background-color: var(--cyber-input-bg);
+  border: 1px solid var(--cyber-border-color);
+  border-radius: 4px;
+  color: var(--cyber-text-color-light);
+  padding: 4px 8px;
+  font-size: 1em;
+  font-family: 'Share Tech Mono', monospace; /* Keep consistent font */
+  outline: none;
+  margin-right: 10px; /* Space before delete button */
+  }
+  
+  .workspace-rename-input:focus {
+  border-color: var(--cyber-glow-color);
+  box-shadow: 0 0 5px var(--cyber-glow-color);
+  }
+  
+  .workspace-delete-btn {
+  background: none;
+  border: none;
+  color: var(--cyber-delete-icon-color);
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.2s ease-in-out;
+  border-radius: 50%;
+  /* position: absolute; 
+  /* right: 5px; */
+  /* top: 50%; */
+  /* transform: translateY(-50%); */
+  }
+  
+  .workspace-item:hover .workspace-delete-btn {
+  opacity: 1; /* Show on hover of the entire workspace item */
+  }
+  
+  .workspace-delete-btn:hover {
+  color: var(--cyber-delete-icon-hover-color);
+  transform: scale(1.1);
+  }
+  
+  .workspace-tab {
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: rgba(22, 33, 62, 0.7);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  }
+  
+  .workspace-tab:hover {
+  background: rgba(83, 52, 131, 0.6);
+  border-color: #9333ea;
+  transform: translateX(5px);
+  }
+  
+  .workspace-tab.active {
+  background: #9333ea;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.7);
+  }
+  
+  /* Adjustments for the action buttons at the bottom of the panel */
+  .workspace-action-btn {
+    width: calc(100% - 30px); /* Adjust width to account for panel padding */
+    margin: 0 15px 10px 15px; /* Add margin for spacing and align with panel padding */
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(22, 33, 62, 0.7); /* Same as workspace-tab */
+    border: 1px solid rgba(147, 51, 234, 0.3); /* Same as workspace-tab */
+    color: #e0e6ff; /* Same as workspace-tab */
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 16px; /* Same as workspace-tab */
+    text-align: left; /* Align text to left */
+    transition: all 0.3s ease;
+    box-shadow: none; /* Remove cyber-button shadow if inherited */
+    display: flex; /* Make it a flex container to align icon and text */
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+  }
+  
+  .workspace-action-btn:hover {
+    background: rgba(83, 52, 131, 0.6); /* Same as workspace-tab hover */
+    border-color: #9333ea; /* Same as workspace-tab hover */
+    transform: translateY(-2px); /* Consistent hover effect */
+    box-shadow: 0 0 10px rgba(147, 51, 234, 0.4); /* Add subtle shadow on hover */
+  }
+  
+  .workspace-action-btn span {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+  }
+  
+  .new-workspace-btn {
+  margin-top: 15px;
+  width: 100%;
+  }
+  
+  .pdf-viewers {
+    flex: 1;
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    overflow-x: auto;
+    background: rgba(10, 10, 10, 0.5);
+    padding-right: 320px;
+    scroll-behavior: smooth;
+    align-items: flex-start; /* Align items to the start to prevent vertical stretching */
+  }
+  
+  /* Responsive PDF viewer sizing */
+  .pdf-viewer {
+    flex-shrink: 0; /* Prevent shrinking */
+    flex-grow: 1; /* Allow growing */
+    width: calc(100% / var(--pdf-count, 1) - (var(--pdf-count, 1) - 1) * 15px / var(--pdf-count, 1)); /* Distribute width equally */
+    background: rgba(22, 33, 62, 0.9);
+    border: 2px solid rgba(147, 51, 234, 0.6);
+    border-radius: 12px;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 12px 40px rgba(147, 51, 234, 0.3);
+    animation: fadeInUp 0.5s ease-out forwards;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    max-width: 800px; /* Add a max-width to prevent excessive growth */
+    min-width: 600px; /* Ensure a minimum readable width */
+  }
+  
+  .pdf-viewer:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
+    border-color: rgba(147, 51, 234, 0.8);
+  }
+  
+  /* Enhanced PDF header */
+  .pdf-header {
+    background: linear-gradient(135deg, rgba(83, 52, 131, 0.95), rgba(147, 51, 234, 0.8));
+    padding: 15px;
+    border-bottom: 2px solid #9333ea;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .pdf-title {
+    font-size: 16px;
+    color: #e0e6ff;
+    text-shadow: 0 0 15px #9333ea;
+    font-weight: bold;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Enhanced PDF canvas container */
+  .pdf-canvas-container {
+    position: relative;
+    padding: 20px;
+    height: 600px; /* Increased height */
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0 0 12px 12px;
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(147, 51, 234, 0.6) rgba(0, 0, 0, 0.3);
+  }
+  
+  .pdf-canvas-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .pdf-canvas-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+  
+  .pdf-canvas-container::-webkit-scrollbar-thumb {
+    background: rgba(147, 51, 234, 0.6);
+    border-radius: 4px;
+  }
+  
+  .pdf-canvas-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(147, 51, 234, 0.8);
+  }
+  
+  /* Enhanced PDF canvas */
+  .pdf-canvas {
+    border: 2px solid rgba(147, 51, 234, 0.4);
+    border-radius: 8px;
+    cursor: crosshair;
+    background: white;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .pdf-canvas:hover {
+    border-color: rgba(147, 51, 234, 0.8);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+  }
+  
+  /* Enhanced navigation buttons */
+  .pdf-nav-btn {
+    background: linear-gradient(45deg, rgba(147, 51, 234, 0.4), rgba(83, 52, 131, 0.6));
+    border: 1px solid #9333ea;
+    color: #e0e6ff;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-width: 35px;
+    border-radius: 12px;
+  }
+  
+  .pdf-nav-btn:hover {
+    background: linear-gradient(45deg, rgba(147, 51, 234, 0.7), rgba(83, 52, 131, 0.8));
+    box-shadow: 0 0 15px rgba(147, 51, 234, 0.6);
+    transform: scale(1.05);
+  }
+  
+  .pdf-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* Enhanced selection overlay */
+  .selection-overlay {
+    position: absolute;
+    border: 3px dashed #9333ea;
+    background: rgba(147, 51, 234, 0.15);
+    pointer-events: none;
+    box-shadow: 
+      0 0 20px rgba(147, 51, 234, 0.8),
+      inset 0 0 20px rgba(147, 51, 234, 0.2);
+    border-radius: 4px;
+    backdrop-filter: blur(2px);
+  }
+  
+  /* --- Collapsible SpacesPanel --- */
+  .spaces-panel {
+    position: fixed; /* Changed from absolute */
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    width: 350px;
+    background: rgba(15, 52, 96, 0.95);
+    border-left: 3px solid #9333ea;
+    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    /* --- New animation properties --- */
+    transform: translateX(calc(100% - 30px));
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .spaces-panel:hover,
+  .spaces-panel.expanded { /* Add class for pinned state */
+    transform: translateX(0);
+  }
+  
+  
+  /* Enhanced capture grid */
+  .capture-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* Larger thumbnails */
+    gap: 12px;
+    min-height: 120px;
+    padding: 15px;
+    border: 2px dashed rgba(147, 51, 234, 0.4);
+    border-radius: 8px;
+    background: rgba(147, 51, 234, 0.08);
+    transition: all 0.3s ease;
+  }
+  
+  /* Enhanced capture thumbnails */
+  .capture-thumbnail {
+    width: 100%;
+    height: 120px; /* Increased height */
+    object-fit: contain; /* Changed from cover to contain for better readability */
+    border-radius: 8px;
+    cursor: grab;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(147, 51, 234, 0.3);
+    background: white;
+    padding: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .capture-thumbnail:hover {
+    transform: scale(1.08);
+    border-color: rgba(147, 51, 234, 0.8);
+    box-shadow: 0 8px 25px rgba(147, 51, 234, 0.4);
+    z-index: 10;
+  }
+  
+  /* Enhanced page containers */
+  .page-container {
+    background: rgba(10, 10, 10, 0.4);
+    border: 2px solid rgba(147, 51, 234, 0.3);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    transition: all 0.3s ease;
+  }
+  
+  .page-container:hover {
+    border-color: rgba(147, 51, 234, 0.6);
+    background: rgba(10, 10, 10, 0.6);
+  }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(147, 51, 234, 0.3);
+  }
+  
+  .page-title {
+    font-size: 14px;
+    color: rgba(224, 230, 255, 0.9);
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
+  }
+  
+  /* Zoom functionality for capture thumbnails */
+  .capture-thumbnail-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  
+  .capture-thumbnail-container .delete-capture-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(220, 38, 127, 0.9); /* Red */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 10;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  capture-thumbnail-container:hover .delete-capture-btn,
+  .capture-thumbnail-container .delete-capture-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background: rgba(239, 68, 68, 1); /* Brighter red on hover */
+  }
+  
+  /* --- Keep existing empty state styles --- */
+  .empty-state {
+    text-align: center;
+    color: rgba(224, 230, 255, 0.7);
+    padding: 50px 20px;
+    font-style: italic;
+    background: rgba(147, 51, 234, 0.05);
+    border: 2px dashed rgba(147, 51, 234, 0.3);
+    border-radius: 12px;
+    margin: 20px;
+  }
+  
+  .capture-thumbnail-zoom {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    max-width: 80vw;
+    max-height: 80vh;
+    border: 3px solid #9333ea;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    background: white;
+    padding: 10px;
+  }
+  
+  .zoom-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 999;
+    backdrop-filter: blur(5px);
+  }
+  
+  /* Enhanced empty states */
+  .empty-state {
+    text-align: center;
+    color: rgba(224, 230, 255, 0.7);
+    padding: 50px 20px;
+    font-style: italic;
+    background: rgba(147, 51, 234, 0.05);
+    border: 2px dashed rgba(147, 51, 234, 0.3);
+    border-radius: 12px;
+    margin: 20px;
+  }
+  
+  .empty-state h3 {
+    color: #9333ea;
+    text-shadow: 0 0 15px rgba(147, 51, 234, 0.8);
+    margin-bottom: 15px;
+    font-size: 20px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+    .pdf-viewers:has(.pdf-viewer:nth-child(2):last-child) .pdf-viewer {
+      min-width: calc(50vw - 100px);
+      max-width: calc(50vw - 100px);
+    }
+  }
+  
+  @media (max-width: 900px) {
+    .pdf-viewer {
+      min-width: 100%;
+      max-width: 100%;
+    }
+    
+    .spaces-panel {
+      width: 300px;
+    }
+    
+    .pdf-viewers {
+      padding-right: 320px;
+    }
+  }
+  .selection-overlay {
+    position: absolute;
+    border: 2px dashed #9333ea;
+    background: rgba(147, 51, 234, 0.2);
+    pointer-events: none;
+    box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+  }
+
+.spaces-panel {
+  /* --- Core Positioning --- */
+position: absolute;
+top: 0;
+right: 0;
+bottom: 0;
+z-index: 20;
+
+/* --- Sizing and Style --- */
+width: 300px;
+background: rgba(15, 52, 96, 0.9);
+border-left: 2px solid #9333ea;
+backdrop-filter: blur(10px);
+display: flex;
+flex-direction: column;
+
+/* --- Animation --- */
+transform: translateX(calc(100% - 25px));
+transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+cursor: pointer;
+  }
+
+  /* --- NEW: Add class-based expansion instead of hover --- */
+.spaces-panel.expanded {
+transform: translateX(0);
+cursor: default;
+  }
+  /* --- Keep the old hover as fallback but with lower priority --- */
+.spaces-panel:hover:not(.dragging) {
+transform: translateX(0);
+cursor: default;
+  }
+.space-lists {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.space-item {
+  background: rgba(22, 33, 62, 0.8);
+  border: 1px solid #9333ea;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.space-item:hover {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.space-header {
+  background: rgba(83, 52, 131, 0.7);
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.space-name {
+  font-size: 14px;
+  color: #e0e6ff;
+}
+
+.space-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.space-btn {
+  background: rgba(147, 51, 234, 0.3);
+  border: 1px solid #9333ea;
+  color: #e0e6ff;
+  padding: 3px 6px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.3s ease;
+  border-radius: 8px; 
+}
+
+.space-btn:hover {
+  background: rgba(147, 51, 234, 0.6);
+  box-shadow: 0 0 10px rgba(147, 51, 234, 0.4);
+}
+
+.space-content {
+  padding: 10px;
+  display: none;
+  min-height: 100px;
+  background: rgba(10, 10, 10, 0.3);
+}
+
+.space-content.active {
+  display: block;
+}
+
+.captured-image {
+  width: 100%;
+  margin-bottom: 10px;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.captured-image:hover {
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+  transform: scale(1.02);
+}
+
+.captured-image.dragging {
+  cursor: grabbing;
+  opacity: 0.8;
+}
+
+.file-input {
+  display: none;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 52, 96, 0.95);
+  border: 2px solid #9333ea;
+  border-radius: 12px;
+  padding: 30px;
+  min-width: 400px;
+  box-shadow: 0 20px 60px rgba(147, 51, 234, 0.4);
+}
+
+.modal h3 {
+  color: #e0e6ff;
+  margin-bottom: 20px;
+  text-align: center;
+  text-shadow: 0 0 15px #9333ea;
+}
+
+.modal input {
+  width: 100%;
+  padding: 12px;
+  background: rgba(22, 33, 62, 0.8);
+  border: 1px solid #9333ea;
+  color: #e0e6ff;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-family: inherit;
+}
+
+.modal input:focus {
+  outline: none;
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.modal-actions button {
+  border-radius: 12px; 
+}        
+
+.glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(147, 51, 234, 0.4);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.8);
+  }
+}
+
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(83, 52, 131, 0.95);
+  border: 1px solid #9333ea;
+  border-radius: 8px;
+  padding: 15px;
+  color: #e0e6ff;
+  z-index: 1001;
+  box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.sortable-ghost {
+  opacity: 0.4;
+}
+
+.sortable-chosen {
+  transform: rotate(5deg);
+}
+
+.empty-state {
+  text-align: center;
+  color: rgba(224, 230, 255, 0.6);
+  padding: 40px;
+  font-style: italic;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Find and modify the .pdf-viewer rule --- */
+.pdf-viewer {
+min-width: 400px;
+background: rgba(22, 33, 62, 0.8);
+border: 1px solid rgba(147, 51, 234, 0.4); /* Make border more subtle */
+border-radius: 8px;
+backdrop-filter: blur(10px);
+box-shadow: 0 8px 32px rgba(147, 51, 234, 0.2);
+/* --- Add the animation property --- */
+animation: fadeInUp 0.5s ease-out forwards; /* 'forwards' keeps the final state */
+}
+.page-container {
+background: rgba(10, 10, 10, 0.2);
+border: 1px solid rgba(147, 51, 234, 0.2);
+border-radius: 6px;
+margin-bottom: 15px;
+padding: 10px;
+}
+
+.page-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 10px;
+padding-bottom: 8px;
+border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.page-title {
+font-size: 12px;
+color: rgba(224, 230, 255, 0.8);
+font-weight: bold;
+}
+
+.capture-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+gap: 8px;
+min-height: 80px;
+padding: 8px;
+border: 2px dashed rgba(147, 51, 234, 0.3);
+border-radius: 4px;
+background: rgba(147, 51, 234, 0.05);
+}
+
+.capture-grid.drag-over {
+border-color: #9333ea;
+background: rgba(147, 51, 234, 0.15);
+}
+
+.capture-thumbnail {
+width: 100%;
+height: 80px;
+object-fit: cover;
+border-radius: 4px;
+cursor: grab;
+transition: transform 0.2s ease;
+}
+
+.capture-thumbnail:hover {
+transform: scale(1.05);
+}
+
+.capture-thumbnail.dragging {
+cursor: grabbing;
+opacity: 0.5;
+}
+
+.add-page-btn {
+width: 100%;
+margin-bottom: 10px;
+background: rgba(22, 33, 62, 0.6);
+border: 1px dashed #9333ea;
+padding: 8px;
+text-align: center;
+cursor: pointer;
+transition: all 0.3s ease;
+border-radius: 12px;
+}
+
+.add-page-btn:hover {
+background: rgba(147, 51, 234, 0.2);
+border-style: solid;
+}
+.sortable-fallback {
+opacity: 0.8 !important;
+background: rgba(147, 51, 234, 0.2) !important;
+border: 2px solid #9333ea !important;
+border-radius: 4px !important;
+}
+
+/* Ensure dragged items stay visible */
+.sortable-ghost {
+opacity: 0.3;
+background: rgba(147, 51, 234, 0.2);
+}
+
+.sortable-chosen {
+transform: rotate(2deg) scale(1.02);
+box-shadow: 0 5px 15px rgba(147, 51, 234, 0.6);
+}
+
+/* --- Prevent panels from collapsing during drag operations --- */
+body.dragging .spaces-panel,
+body.dragging .workspaces-panel {
+  transform: translateX(0) !important;
+}
+
+.capture-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+gap: 8px;
+min-height: 80px;
+padding: 8px;
+border: 2px dashed rgba(147, 51, 234, 0.3);
+border-radius: 4px;
+background: rgba(147, 51, 234, 0.05);
+transition: all 0.3s ease;
+}
+
+.capture-grid:empty {
+display: flex;
+align-items: center;
+justify-content: center;
+min-height: 100px;
+border-style: dashed;
+}
+
+.capture-grid.drag-over {
+border-color: #9333ea;
+background: rgba(147, 51, 234, 0.15);
+box-shadow: inset 0 0 20px rgba(147, 51, 234, 0.3);
+}
+
+/* Better visual feedback for valid drop zones */
+.sortable-ghost {
+opacity: 0.3;
+background: rgba(147, 51, 234, 0.4) !important;
+border: 2px dashed #9333ea !important;
+border-radius: 4px;
+}
+
+/* Prevent header from collapsing during drag operations */
+.header.dragging {
+  transform: translateY(0) !important;
+}
+
+/* Ensure body handles dragging state for header too */
+body.dragging .header {
+  transform: translateY(0) !important;
+}
+
+/* NEW: Zen Mode Styles */
+body.zen-mode {
+  background: #000; /* Darken main UI background */
+}
+
+body.zen-mode .workspaces-panel {
+  display: none; /* Workspaces left sidebar minimized (gone) */
+}
+
+body.zen-mode .header {
+  display: none; /* Top bar (header) minimized (gone) */
+}
+
+body.zen-mode .container {
+  padding-left: 0; /* Remove left padding */
+  padding-top: 0; /* Remove top padding */
+  padding-right: 30px; /* Keep space for the collapsed spaces panel */
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body.zen-mode .main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  padding: 0; /* Remove any padding within main-content */
+}
+
+body.zen-mode .pdf-viewers {
+  flex: 1;
+  display: flex;
+  gap: 20px; /* Increased gap for better spacing */
+  padding: 20px; /* Increased padding */
+  overflow-x: hidden; /* Prevent horizontal scroll for wrapped content */
+  overflow-y: auto; /* Allow vertical scroll if PDFs wrap */
+  background: transparent;
+  align-items: flex-start; /* Align items to the start */
+  justify-content: flex-start; /* Justify items to the start */
+  padding-right: 0; /* No right padding in zen mode, handled by container */
+  flex-wrap: wrap; /* Allow PDFs to wrap to the next line */
+}
+
+body.zen-mode .pdf-viewer {
+  flex-shrink: 0;
+  flex-grow: 1; /* Allow growing to fill space */
+  flex-basis: 0; /* Allow shrinking below content size */
+  min-width: 45%; /* Ensure minimum width for two columns initially */
+  height: calc(100vh - 40px); /* Adjust height considering new padding */
+  max-width: unset; /* Remove max-width constraint */
+  min-width: unset; /* Remove min-width constraint */
+  border: 2px solid rgba(147, 51, 234, 0.6);
+  box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
+}
+
+/* Spaces sidebar remains hoverable in zen mode - remove the !important transform */
+body.zen-mode .spaces-panel {
+  /* REMOVED: transform: translateX(0) !important; */
+  pointer-events: auto; /* Ensure it's clickable */
+  z-index: 50; /* Ensure it's on top */
+  background: rgba(15, 52, 96, 0.98); /* Slightly more opaque */
+  box-shadow: -15px 0 50px rgba(0, 0, 0, 0.7); /* Stronger shadow */
+}
+
+/* Ensure the hover effect still works in zen mode */
+body.zen-mode .spaces-panel:hover,
+body.zen-mode .spaces-panel.expanded {
+  transform: translateX(0); /* This original rule should now take effect on hover */
+}
+
+/* NEW: Ensure the header and workspaces panel are fully hidden, not just translated */
+body.zen-mode .workspaces-panel,
+body.zen-mode .header {
+  left: -100vw; /* Move off-screen to the left */
+  /* Or display: none; */
+}
+
+/* Zen Mode Exit Button (Bottom Left) */
+.zen-exit-button {
+  position: fixed;
+  bottom: 30px; /* Aligned with the new Zen toggle button */
+  left: 30px; /* Positioned on the left */
+  background: rgba(220, 38, 127, 0.9); /* Red */
+  border: 1px solid  #fff;
+  color: #fff;
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  z-index: 10000; /* High z-index */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.zen-exit-button:hover {
+  background: rgba(239, 68, 68, 1); /* Brighter red on hover */
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* Zen Mode specific styles for PdfViewer */
+body.zen-mode .pdf-viewer .pdf-header {
+  background: linear-gradient(135deg, rgba(83, 52, 131, 0.7), rgba(147, 51, 234, 0.6));
+  border-bottom: none; /* Remove bottom border in zen mode */
+  padding: 10px;
+  display: flex;
+  justify-content: center; /* Center controls */
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+body.zen-mode .pdf-viewer .pdf-header:hover {
+  background: linear-gradient(135deg, rgba(83, 52, 131, 0.95), rgba(147, 51, 234, 0.8));
+}
+
+body.zen-mode .pdf-viewer .pdf-title {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute; /* Take it out of flow */
+  transform: translateY(-100%);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+body.zen-mode .pdf-viewer:hover .pdf-title {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  position: static; /* Put it back in flow on hover */
+  width: 100%; /* Ensure it takes full width */
+  text-align: center;
+}
+
+body.zen-mode .pdf-viewer .pdf-controls {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  display: flex; /* Ensure it's a flex container */
+  gap: 10px; /* Spacing between buttons */
+}
+
+body.zen-mode .pdf-viewer:hover .pdf-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hide the remove PDF button */
+body.zen-mode .pdf-viewer .pdf-controls .pdf-nav-btn[title="Remove PDF"] {
+  display: none;
+}
+
+/* Zen Mode Toggle Button (Bottom Right) */
+.zen-mode-toggle-button {
+  position: fixed;
+  bottom: 30px; /* Consistent with the exit button */
+  right: 30px; /* Positioned on the right */
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #9333ea, #533483);
+  border: 2px solid #fff;
+  color: #e0e6ff;
+  font-size: 0.8em;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10000;
+  box-shadow: 0 5px 20px rgba(147, 51, 234, 0.6);
+  transition: all 0.3s ease;
+  text-align: center;
+  line-height: 1.2;
+  padding: 5px;
+}
+
+.zen-mode-toggle-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(147, 51, 234, 0.8);
+  background: linear-gradient(45deg, #a752eb, #6a44a0);
+}
+
+.zen-mode-toggle-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 10px rgba(147, 51, 234, 0.4);
+}
+
+/* NEW: Upscale Overlay Styles */
+.upscale-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50; /* Above canvas, below modals */
+  overflow: hidden; /* For sparks animation */
+  pointer-events: none; /* Allow interaction with elements below if needed */
+}
+
+.upscale-blur-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6); /* Semi-transparent black overlay */
+  backdrop-filter: blur(8px); /* Blur effect */
+  z-index: 1;
+}
+
+.upscale-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 30px;
+  background: rgba(15, 52, 96, 0.95); /* Slightly darker, more opaque */
+  border: 2px solid #9333ea;
+  border-radius: 15px;
+  box-shadow: 0 0 40px rgba(147, 51, 234, 0.7), inset 0 0 20px rgba(147, 51, 234, 0.3);
+  text-align: center;
+  color: #e0e6ff;
+  animation: fadeInScale 0.5s ease-out forwards;
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Circular Progress Bar */
+.circular-progress {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: conic-gradient(#9333ea var(--progress, 0%), transparent var(--progress, 0%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #00e6e6; /* Bright cyan */
+  text-shadow: 0 0 10px rgba(0, 230, 230, 0.7);
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.5), inset 0 0 10px rgba(147, 51, 234, 0.3);
+  transition: background 0.3s ease-in-out; /* Smooth transition for progress fill */
+}
+
+.circular-progress::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  background: rgba(15, 52, 96, 0.9); /* Inner circle background */
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.circular-progress span {
+  position: relative;
+  z-index: 2;
+}
+
+/* Magic Sparks Animation */
+.sparks-animation {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: hidden; /* Ensure sparks don't escape */
+  border-radius: 15px; /* Match content border-radius */
+  z-index: -1; /* Behind content */
+}
+
+.sparks-animation::before,
+.sparks-animation::after {
+  content: '✨';
+  position: absolute;
+  font-size: 2em;
+  color: gold;
+  text-shadow: 0 0 10px gold, 0 0 20px yellow;
+  animation: sparkAppear 1.5s infinite ease-out forwards;
+}
+
+.sparks-animation::before {
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+  transform: rotate(20deg);
+}
+
+.sparks-animation::after {
+  bottom: 15%;
+  right: 15%;
+  animation-delay: 0.75s;
+  transform: rotate(-30deg);
+  font-size: 2.5em;
+}
+
+@keyframes sparkAppear {
+  0% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(360deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(720deg); }
+}
+/* Looping Messages */
+.upscale-message-container {
+  /* REMOVE height: 30px; */
+  /* REMOVE overflow: hidden; */
+  position: relative;
+  width: 100%;
+}
+
+.upscale-messages {
+  position: relative; 
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* REMOVE height: 100%; */
+}
+
+.upscale-messages p {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #e0e6ff;
+  text-shadow: 0 0 8px rgba(0, 230, 230, 0.5);
+  padding: 5px 0;
+  margin: 0;
+  text-align: center;
+  position: relative; /* Change to relative, it will be centered by parent flexbox */
+  animation: fadeMessage 5s ease-in-out forwards; /* Match interval (2 seconds) for a full cycle */
+}
+
+/* Define fadeMessage keyframes - now includes fade out */
+@keyframes fadeMessage {
+  0% { opacity: 0; }
+  20% { opacity: 1; } /* Fade in */
+  80% { opacity: 1; } /* Stay visible */
+  100% { opacity: 0; } /* Fade out */
+}
+
+/* Hide progress bar container as we're using circular progress now */
+.progress-bar-container {
+  display: none;
+}
+
+.upscale-percentage {
+  display: none;
+}
+
+.settings-button {
+width: 30px;
+height: 30px;
+position: static;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+padding: 0;
+
+/* The Fix: Make the button container invisible */
+background: transparent;
+border: none;
+outline: none;
+
+/* The Glow Effect & Shape */
+border-radius: 50%; /* Keep the shadow circular */
+box-shadow: 0 0 8px rgba(0, 255, 255, 0.8), 0 0 4px rgba(255, 0, 255, 0.5);
+
+/* The Icon Color */
+color: white;
+
+/* Interaction */
+transition: all 0.3s ease;
+
+fill: currentColor;
+}
+
+.settings-button:hover {
+transform: scale(1.1);
+box-shadow: 0 0 12px rgba(0, 255, 255, 1), 0 0 6px rgba(255, 0, 255, 0.7);
+}
+
+.settings-menu-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.7);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1002;
+backdrop-filter: blur(5px);
+}
+
+.settings-menu-content {
+background: #1a1a2e;
+padding: 30px;
+border-radius: 10px;
+box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), 0 0 40px rgba(255, 0, 255, 0.5);
+color: #00FFFF;
+text-align: center;
+width: 90%;
+max-width: 400px;
+position: relative;
+border: 2px solid #00FFFF;
+}
+
+.settings-menu-content h3 {
+color: #FF00FF;
+margin-bottom: 25px;
+text-shadow: 0 0 8px #FF00FF;
+}
+
+.setting-group {
+margin-bottom: 20px;
+text-align: left;
+}
+
+.setting-group h4 {
+color: #00FFFF;
+margin-bottom: 15px;
+font-size: 1.1em;
+border-bottom: 1px dashed #00FFFF;
+padding-bottom: 5px;
+}
+
+.setting-group label {
+display: flex;
+align-items: center;
+margin-bottom: 10px;
+font-size: 0.95em;
+cursor: pointer;
+color: #B0E0E6; /* Light cyan for text */
+}
+
+.setting-group input[type="radio"] {
+margin-right: 10px;
+-webkit-appearance: none;
+-moz-appearance: none;
+appearance: none;
+width: 18px;
+height: 18px;
+border: 2px solid #00FFFF;
+border-radius: 50%;
+outline: none;
+cursor: pointer;
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all 0.2s ease;
+}
+
+.setting-group input[type="radio"]:checked {
+background-color: #FF00FF;
+border-color: #FF00FF;
+box-shadow: 0 0 5px #FF00FF, 0 0 10px #FF00FF inset;
+}
+
+.setting-group input[type="radio"]:checked::before {
+content: '';
+width: 8px;
+height: 8px;
+border-radius: 50%;
+transform: scale(1);
+transition: transform 0.2s ease;
+}
+
+.settings-menu-content .cyber-button {
+margin-top: 25px;
+width: 100%;
+}
+
+.workspaces-panel-header-buttons {
+position: absolute;
+top: 10px;
+left: 10px;
+background-color: transparent;
+z-index: 1001; 
+}
 }
