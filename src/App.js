@@ -1143,11 +1143,11 @@ function App() {
 
       {isZenMode && createPortal(
         <button
-          className="fixed bottom-[30px] left-[30px] bg-[#dc267f]/90 border border-white text-white p-2 rounded-[20px] cursor-pointer text-sm font-bold z-[10000] shadow-[0_4px_15px_rgba(0,0,0,0.4)] transition-all duration-200 hover:bg-[#ef4444]/100 hover:scale-105 hover:shadow-[0_6px_20px_rgba(0,0,0,0.6)]"
+          className="zen-exit-button"
           onClick={toggleZenMode}
           title="Exit Zen Mode (Esc)"
         >
-          ✖️ Exit
+          ✖️
         </button>,
         document.body
       )}

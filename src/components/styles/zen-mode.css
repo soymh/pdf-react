@@ -54,9 +54,9 @@ body.zen-mode .header {
   @apply -left-[100vw];
 }
 
-/* Zen Mode Exit Button (Bottom Left) */
+/* Zen Mode Exit Button (Top Left, Circular) */
 .zen-exit-button {
-  @apply fixed bottom-[30px] left-[30px] bg-[#dc267f]/90 border border-white text-white p-2 rounded-[20px] cursor-pointer text-sm font-bold z-[10000] shadow-[0_4px_15px_rgba(0,0,0,0.4)] transition-all duration-200;
+  @apply fixed top-[10px] left-[10px] w-[50px] h-[50px] bg-[#dc267f]/90 border border-white text-white rounded-full cursor-pointer text-sm font-bold z-[10000] shadow-[0_4px_15px_rgba(0,0,0,0.4)] transition-all duration-200 flex items-center justify-center;
 }
 
 .zen-exit-button:hover {
