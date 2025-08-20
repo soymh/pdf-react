@@ -9,14 +9,53 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionRect, setSelectionRect] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditingPage, setIsEditingPage] = useState(false);
+  const [tempPageNumber, setTempPageNumber] = useState('');
   // Remove local scale state: const [scale, setScale] = useState(1);
 
+  // Refs for page navigation queue and debouncing
+  const pageChangeQueueRef = useRef([]);
+  const isProcessingQueueRef = useRef(false);
+  const currentPageRef = useRef(pdfData.currentPage);
+  
   // Ref to hold the current page's rendered ImageData for upscaling
   const currentPageImageDataRef = useRef(null);
 
+  // Process page change queue
+  const processPageChangeQueue = useCallback(async () => {
+    if (isProcessingQueueRef.current || pageChangeQueueRef.current.length === 0) {
+      return;
+    }
+
+    isProcessingQueueRef.current = true;
+
+    while (pageChangeQueueRef.current.length > 0) {
+      const nextChange = pageChangeQueueRef.current.shift();
+      currentPageRef.current = nextChange.newPage;
+      // Add a small delay to allow for proper processing
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
+    // Update the parent with the final page
+    onPageChange(pdfData.id, currentPageRef.current);
+    isProcessingQueueRef.current = false;
+  }, [onPageChange, pdfData.id]);
+
+  // Add page change to queue
+  const queuePageChange = useCallback((newPage) => {
+    // Replace any existing queued changes with the new one
+    pageChangeQueueRef.current = [{ newPage }];
+    processPageChangeQueue();
+  }, [processPageChangeQueue]);
+
+  
+
+  // Debounce timer ref
+  const renderDebounceTimerRef = useRef(null);
+
   useEffect(() => {
     const renderPage = async () => {
-    const canvas = canvasRef.current;
+      const canvas = canvasRef.current;
       if (!pdfData.pdf || !canvas) {
         console.log(`PdfViewer ${pdfData.id}: Missing PDF object or canvas, skipping render.`);
         return;
@@ -103,10 +142,26 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
     }
   };
   
-    renderPage();
+    // Clear any existing debounce timer
+    if (renderDebounceTimerRef.current) {
+      clearTimeout(renderDebounceTimerRef.current);
+    }
+
+    // Set a new debounce timer
+    renderDebounceTimerRef.current = setTimeout(() => {
+      renderPage();
+    }, 150); // 150ms debounce
 
     const resizeObserver = new ResizeObserver(() => {
+      // Clear any existing debounce timer for resize
+      if (renderDebounceTimerRef.current) {
+        clearTimeout(renderDebounceTimerRef.current);
+      }
+      
+      // Set a new debounce timer for resize
+      renderDebounceTimerRef.current = setTimeout(() => {
         renderPage();
+      }, 200); // 200ms debounce for resize
     });
 
     const containerElement = canvasRef.current?.parentElement;
@@ -115,6 +170,10 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
     }
 
     return () => {
+      if (renderDebounceTimerRef.current) {
+        clearTimeout(renderDebounceTimerRef.current);
+      }
+      
       if (renderTaskRef.current) {
         try {
           renderTaskRef.current.cancel();
@@ -122,10 +181,15 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
           // Ignore cancellation errors
         }
       }
+      
       if (containerElement) {
           resizeObserver.unobserve(containerElement);
       }
+      
       renderTaskRef.current = null;
+      // Clear the queue on unmount
+      pageChangeQueueRef.current = [];
+      isProcessingQueueRef.current = false;
     };
   }, [pdfData.pdf, pdfData.currentPage, pdfData.id, pdfData.totalPages, isZenMode, scale]);
 
@@ -237,9 +301,45 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
   const changePage = useCallback((offset) => {
     const newPage = pdfData.currentPage + offset;
     if (newPage > 0 && newPage <= pdfData.totalPages) {
-      onPageChange(pdfData.id, newPage);
+      queuePageChange(newPage);
     }
-  }, [onPageChange, pdfData.id, pdfData.currentPage, pdfData.totalPages]);
+  }, [queuePageChange, pdfData.currentPage, pdfData.totalPages]);
+
+  const handlePageNumberClick = () => {
+    setIsEditingPage(true);
+    setTempPageNumber(pdfData.currentPage.toString());
+  };
+
+  const handlePageNumberSubmit = (e) => {
+    e.preventDefault();
+    const pageNumber = parseInt(tempPageNumber, 10);
+    if (!isNaN(pageNumber) && pageNumber > 0 && pageNumber <= pdfData.totalPages) {
+      queuePageChange(pageNumber);
+    }
+    setIsEditingPage(false);
+    setTempPageNumber('');
+  };
+
+  const handlePageNumberCancel = () => {
+    setIsEditingPage(false);
+    setTempPageNumber('');
+  };
+
+  const handlePageNumberChange = (e) => {
+    const value = e.target.value;
+    // Only allow numeric input
+    if (value === '' || /^\d+$/.test(value)) {
+      setTempPageNumber(value);
+    }
+  };
+
+  const handlePageNumberKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handlePageNumberSubmit(e);
+    } else if (e.key === 'Escape') {
+      handlePageNumberCancel();
+    }
+  };
 
   // Use onScaleChange prop to report scale changes
   const handleZoomIn = () => {
@@ -304,9 +404,29 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
             ◀
           </button>
           
-          <span className="page-counter">
-            {pdfData.currentPage} / {pdfData.totalPages}
-          </span>
+          {isEditingPage ? (
+            <form onSubmit={handlePageNumberSubmit} className="page-counter-form">
+              <input
+                type="text"
+                value={tempPageNumber}
+                onChange={handlePageNumberChange}
+                onKeyDown={handlePageNumberKeyDown}
+                onBlur={handlePageNumberCancel}
+                autoFocus
+                className="page-counter-input"
+              />
+              <span className="page-counter-slash">/</span>
+              <span className="page-counter-total">{pdfData.totalPages}</span>
+            </form>
+          ) : (
+            <span 
+              className="page-counter clickable" 
+              onClick={handlePageNumberClick}
+              title="Click to enter page number"
+            >
+              {pdfData.currentPage} / {pdfData.totalPages}
+            </span>
+          )}
           
           <button
             className="pdf-nav-btn"

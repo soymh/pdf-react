@@ -103,6 +103,44 @@ body.dragging .header {
 
 .page-counter {
   @apply px-2 py-1 text-sm font-bold bg-cyber-blue/60 border border-cyber-purple/40 rounded-lg;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.page-counter:hover {
+  @apply bg-cyber-purple/30;
+}
+
+.page-counter::after {
+  content: "✎";
+  @apply absolute -top-1 -right-1 text-[8px] opacity-0 transition-opacity duration-200;
+}
+
+.page-counter:hover::after {
+  @apply opacity-100;
+}
+
+.page-counter-form {
+  @apply flex items-center px-1 py-1 bg-cyber-blue/60 border border-cyber-purple/40 rounded-lg;
+}
+
+.page-counter-input {
+  @apply w-12 px-1 py-0.5 text-sm font-bold text-center bg-transparent border-none outline-none;
+  color: inherit;
+  caret-color: #fff;
+}
+
+.page-counter-input:focus {
+  @apply outline-none;
+}
+
+.page-counter-slash {
+  @apply px-1;
+}
+
+.page-counter-total {
+  @apply px-1;
 }
 
 /* Dropdown Menu */
