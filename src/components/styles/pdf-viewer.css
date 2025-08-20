@@ -1,6 +1,7 @@
 .pdf-viewer {
   @apply min-w-[400px] bg-cyber-blue/80 border border-cyber-purple/40 rounded-lg backdrop-blur-lg shadow-[0_8px_32px_rgba(147,51,234,0.2)];
   animation: fadeInUp 0.5s ease-out forwards;
+  position: relative;
 }
 
 .page-container {
@@ -113,13 +114,19 @@ body.dragging .header {
   @apply min-w-[180px];
 }
 
+/* PDF Canvas Container */
+.pdf-canvas-container {
+  @apply relative overflow-auto;
+  max-height: calc(100vh - 150px);
+}
+
 /* Zoom Controls */
 .zoom-controls {
-  @apply absolute bottom-4 left-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300;
+  @apply fixed bottom-4 left-4 flex flex-col gap-2 opacity-0 transition-opacity duration-300;
   z-index: 10;
 }
 
-.pdf-canvas-container:hover .zoom-controls {
+.pdf-viewer:hover .zoom-controls {
   @apply opacity-100;
 }
 

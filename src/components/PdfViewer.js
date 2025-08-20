@@ -295,9 +295,27 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
       <div className="pdf-header">
         <div className="pdf-title" title={pdfData.name}>{pdfData.name}</div>
         <div className="pdf-controls">
+          <button
+            className="pdf-nav-btn"
+            onClick={() => changePage(-1)}
+            disabled={pdfData.currentPage <= 1 || isUpscaling}
+            title="Previous Page"
+          >
+            ◀
+          </button>
+          
           <span className="page-counter">
             {pdfData.currentPage} / {pdfData.totalPages}
           </span>
+          
+          <button
+            className="pdf-nav-btn"
+            onClick={() => changePage(1)}
+            disabled={pdfData.currentPage >= pdfData.totalPages || isUpscaling}
+            title="Next Page"
+          >
+            ▶
+          </button>
           
           <div className="relative pdf-controls-menu">
             <button 
@@ -350,30 +368,6 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
         />
         {isSelecting && <div className="selection-overlay" style={getSelectionStyle()}></div>}
         
-        <div className="zoom-controls">
-          <button
-            className="zoom-btn zoom-in"
-            onClick={handleZoomIn}
-            title="Zoom In"
-          >
-            +
-          </button>
-          <button
-            className="zoom-btn zoom-reset"
-            onClick={handleResetZoom}
-            title="Reset Zoom"
-          >
-            ⦿
-          </button>
-          <button
-            className="zoom-btn zoom-out"
-            onClick={handleZoomOut}
-            title="Zoom Out"
-          >
-            -
-          </button>
-        </div>
-        
         {isUpscaling && (
           <div className="upscale-overlay">
             <div className="upscale-blur-background"></div>
@@ -390,6 +384,29 @@ function PdfViewer({ pdfData, onRemove, onPageChange, onCapture, onUpscale, isUp
             </div>
           </div>
         )}
+      </div>
+      <div className="zoom-controls">
+        <button
+          className="zoom-btn zoom-in"
+          onClick={handleZoomIn}
+          title="Zoom In"
+        >
+          +
+        </button>
+        <button
+          className="zoom-btn zoom-reset"
+          onClick={handleResetZoom}
+          title="Reset Zoom"
+        >
+          ⦿
+        </button>
+        <button
+          className="zoom-btn zoom-out"
+          onClick={handleZoomOut}
+          title="Zoom Out"
+        >
+          -
+        </button>
       </div>
     </div>
   );
