@@ -1,0 +1,32 @@
+{
+  "name": "PDF Workspace - Cyberpunk Edition",
+  "short_name": "PDF Workspace",
+  "description": "AI-Enhanced PDF workspace with advanced snippet management and upscaling capabilities",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030213",
+  "theme_color": "#030213",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vite.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business", "utilities"],
+  "features": [
+    "AI Image Upscaling",
+    "PDF Snippet Management",
+    "Workspace Organization",
+    "Real PDF Export",
+    "Local Storage Caching"
+  ]
+}
