@@ -9,7 +9,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from './ui/context-menu';
 import { Plus, Folder, Grid3x3, Download, Trash2, Move, ChevronRight, Sparkles } from 'lucide-react';
 import SnippetGrid from './SnippetGrid';
-import ExportDialog from './ExportDialog';
+import ExportDialog from './ExportSnippets';
 import type { ExportLayout } from '../App';
 
 interface Snippet {
